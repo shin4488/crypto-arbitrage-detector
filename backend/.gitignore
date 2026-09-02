@@ -1,0 +1,12 @@
+# ビルド成果物
+bin/
+*.test
+coverage.out
+coverage.html
+
+# 埋め込み用フロントエンド成果物（ビルド時に生成）
+internal/webui/dist/*
+!internal/webui/dist/.gitkeep
+
+# 環境変数
+.env

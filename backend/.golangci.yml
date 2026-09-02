@@ -1,0 +1,51 @@
+# golangci-lint v2 設定
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - misspell
+    - revive
+    - gocritic
+    - errorlint
+    - bodyclose
+    - contextcheck
+    - nilerr
+    - unconvert
+    - unparam
+    - prealloc
+    - copyloopvar
+  settings:
+    errcheck:
+      # 標準エラー出力への書き込み失敗は対処のしようがないため検査しない
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+    revive:
+      rules:
+        # 日本語コメントのため「コメントは識別子名で始める」規則は無効化する
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1020", "-ST1021", "-ST1022"]
+  exclusions:
+    rules:
+      - path: _test\.go
+        # bodyclose: gorilla/websocket の Dial が返す Response は本文が既に読み終わっており閉じる必要がない
+        linters: [errcheck, unparam, bodyclose]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes: [github.com/shin4488/crypto-arbitrage-detector]
