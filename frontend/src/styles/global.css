@@ -1,0 +1,363 @@
+/*
+ * 見やすさ優先のシンプルな配色。
+ * 数字は等幅（tabular-nums）で右揃えにし、桁を目で比べられるようにする。
+ * 色は「利益＝緑」「損失・切断＝赤」「補足＝灰」の3種に絞る。
+ */
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #d9dde3;
+  --text: #1b1f24;
+  --muted: #6b7280;
+  --pos: #137a3a;
+  --pos-bg: #e6f6ec;
+  --neg: #b42318;
+  --neg-bg: #fdecec;
+  --warn-bg: #fff4d6;
+  --warn-text: #7a4b00;
+  --live: #0b63c4;
+  --flash: rgba(255, 213, 0, 0.45);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --surface: #1a1f26;
+    --border: #2f3640;
+    --text: #e6e9ee;
+    --muted: #9aa3b0;
+    --pos: #5ad07f;
+    --pos-bg: #15301f;
+    --neg: #ff7b70;
+    --neg-bg: #3a1c1a;
+    --warn-bg: #3a2f10;
+    --warn-text: #ffd27a;
+    --live: #6db3ff;
+    --flash: rgba(255, 213, 0, 0.3);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1,
+h2 {
+  margin: 0;
+  font-weight: 650;
+}
+
+h1 {
+  font-size: 1.25rem;
+}
+
+h2 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.85em;
+}
+
+.pos {
+  color: var(--pos);
+}
+
+.neg {
+  color: var(--neg);
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ヘッダー */
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 24px;
+  align-items: start;
+}
+
+.header__title {
+  grid-column: 1 / -1;
+}
+
+.status-list {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.status {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.status dt {
+  font-weight: 600;
+}
+
+.status dt::after {
+  content: ":";
+}
+
+.status dd {
+  margin: 0;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  margin-right: 0.35em;
+  background: var(--muted);
+}
+
+.status--connected .dot {
+  background: var(--pos);
+}
+
+.status--disconnected .dot {
+  background: var(--neg);
+}
+
+.status--connecting .dot {
+  background: var(--muted);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.banner {
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.banner--warn {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+/* ペアの板 */
+.boards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr));
+  gap: 16px;
+}
+
+.board {
+  min-width: 0; /* グリッドの子要素が内容（表）の幅で広がってはみ出すのを防ぐ */
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.board--profitable {
+  border-color: var(--pos);
+  box-shadow: 0 0 0 2px var(--pos-bg);
+}
+
+.board__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.board__empty {
+  padding: 6px 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--profit {
+  background: var(--pos-bg);
+  color: var(--pos);
+}
+
+.badge--none {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.badge--live {
+  background: var(--pos-bg);
+  color: var(--live);
+  font-size: 0.8rem;
+  padding: 0 8px;
+}
+
+/* 表 */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: baseline;
+  border-bottom: 1px solid var(--border);
+}
+
+thead th {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.th-sub {
+  display: block;
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+
+tbody th {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tr.is-profitable th,
+tr.is-profitable td {
+  background: var(--pos-bg);
+}
+
+tr.detail td {
+  padding-top: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+tr.detail .note {
+  color: var(--warn-text);
+  flex-basis: 100%;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* 履歴 */
+.history {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.history__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+tr.is-ongoing td {
+  font-weight: 600;
+}
+
+/* 値が変わった瞬間の目印 */
+@keyframes flash {
+  from {
+    background-color: var(--flash);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.flash {
+  animation: flash 0.7s ease-out;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash {
+    animation: none;
+  }
+}
+
+/* 狭い画面では取引所の状態を1行ずつ並べ、細い列に折り返されないようにする */
+@media (max-width: 560px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+
+  .status-list {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .status {
+    display: block;
+  }
+
+  .status dt,
+  .status dd {
+    display: inline;
+  }
+}
