@@ -1,201 +1,171 @@
-# Crypto Arbitrage Detection System
+# Crypto Arbitrage Detector
 
-リアルタイム暗号通貨アービトラージ検知システム（Docker版）
+Binance と OKX の板（オーダーブック）をリアルタイムに突き合わせ、**手数料込みで利益が出る裁定（アービトラージ）機会**を検知して画面に表示するツールです。売買の自動執行は行いません。
 
-## 🏗️ アーキテクチャ
+- バックエンド: Go（取引所への WebSocket 接続、検知エンジン、画面への配信）
+- フロントエンド: React + TypeScript（Vite）。ビルド成果物は Go バイナリに埋め込まれ、単一のコンテナで動きます
 
-```
-crypto-arbitrage-detector/
-├── docker-compose.yml      # Docker Compose設定
-├── frontend/               # React TypeScript フロントエンド
-│   ├── Dockerfile
-│   ├── src/
-│   └── ...
-└── backend/                # Go バックエンド
-    ├── Dockerfile
-    ├── main.go
-    ├── arbitrage/          # アービトラージ検知エンジン
-    └── ...
-```
+## 画面の見方
 
-## 🚀 機能
+- **ヘッダー**: サーバーと各取引所の接続状態、設定している taker 手数料率、「タブのタイトルで通知」の切り替え
+- **通貨ペアごとの板**
+  - 上の表: 取引所ごとの最良買い気配（bid）と最良売り気配（ask）、その数量、最終更新からの経過時間
+  - 下の表: 両方向（A で買って B で売る / B で買って A で売る）の評価
+    - 価格差 / 1単位: 売り先の最良 bid − 買い元の最良 ask（手数料前）。マイナスなら逆ざや
+    - 手数料込み / 1単位: 上の値から両取引所の手数料を引いたもの。これが正のとき「利益あり」
+    - 数量・純利益: 板を突き合わせて利益が出る範囲で積み上げた取引可能数量と、その純利益
+  - 利益が出ている方向は緑で強調され、平均約定価格・手数料前利益・手数料の合計も表示されます
+- **機会の履歴**: 純利益が正であり続けた期間を1件として、開始時刻・継続時間・最大純利益・そのときの数量を一覧します
+- 値が変わった瞬間は背景が一瞬光ります。「タブのタイトルで通知」を有効にすると、機会がある間はタブのタイトルに `● BTC +1.23` のような目印が出ます
 
-- **リアルタイム価格監視**: Binance と OKX から WebSocket 経由でリアルタイム価格データを取得
-- **高速アービトラージ検知**: 取引所間の価格差を即座に検知して利益機会を特定
-- **リアルタイムUI**: 価格変化時の光るアニメーション効果とダークテーマUI
-- **多言語対応**: ブラウザ言語に基づく自動言語切り替え（日本語/英語）
-- **Docker環境**: 簡単なセットアップとデプロイ
+## 起動方法
 
-## 📡 サポート対象
+### Docker（推奨）
 
-### 取引所
-- **Binance**: bid/ask 価格をリアルタイム取得
-- **OKX**: bid/ask 価格をリアルタイム取得
-
-### 通貨ペア
-- **BTC/USDT**: ビットコイン/テザー
-- **ETH/USDT**: イーサリアム/テザー
-
-## 🎯 アービトラージ検知仕様
-
-### 検知ロジック
-- **データ有効期限**: 5秒以内の価格データのみ使用
-- **最小スプレッド閾値**: なし（小さな機会も検知）
-- **検知パターン**:
-  1. OKXで買い → Binanceで売り
-  2. Binanceで買い → OKXで売り
-- **利益計算**: `(売り量 × 売り価格) - (買い量 × 買り価格)`
-
-### 取引量制限
-- **BTC/USDT**: 最大1.0 BTC、最小0.00001 BTC
-- **ETH/USDT**: 最大10.0 ETH、最小0.0001 ETH
-- **取引可能量**: 買い側と売り側の最小量を採用
-
-### 表示仕様
-- **利益のみ表示**: 正のスプレッドのみ表示
-- **損失時**: 「機会なし」として表示
-- **リアルタイム更新**: 価格変動があれば即座にUI更新
-
-## 🛠️ セットアップ
-
-### 前提条件
-- Docker
-- Docker Compose
-
-### 起動方法
-
-1. **プロジェクトのクローン**
 ```bash
-git clone <repository-url>
-cd crypto-arb-system
+docker compose up --build
 ```
 
-2. **Docker Composeで起動**
+http://localhost:8080 を開きます。設定を変える場合は `backend/config.example.json` を元に `config.json` を作り、`docker-compose.yml` の `volumes` と `ARB_CONFIG` のコメントを外してください。
+
+### 開発
+
+このリポジトリは Go をローカルにインストールしない前提で、Go のビルドやテストは Docker コンテナ内で実行します（`backend/Makefile` を参照）。ローカルに Go がある場合は `make test GO=go` のように上書きできます。
+
 ```bash
-docker-compose up --build
+# バックエンド（http://localhost:8080、Docker 内で go run）
+cd backend && make run
+
+# フロントエンド（http://localhost:3000、/ws は 8080 へ中継）
+cd frontend && corepack enable && yarn install && yarn dev
 ```
 
-3. **アクセス**
-- フロントエンド: http://localhost:3000
-- バックエンドAPI: http://localhost:8080
-- ヘルスチェック: http://localhost:8080/health
+## 検知の仕様
 
-## 🔧 開発環境
+### 対象
 
-### ログの確認
+- 取引所: Binance（Partial Book Depth 20段・100ms）、OKX（books5 チャネル 5段・変化時100ms）
+- 通貨ペア: BTC/USDT、ETH/USDT（設定で追加可能）
+
+### 利益の計算
+
+「買い元取引所の ask を取って買い、売り先取引所の bid を取って売る」前提（両方 taker）で計算します。
+
+- 1単位あたりの手数料込み損益 = `bid × (1 − 売り手数料率) − ask × (1 + 買い手数料率)`
+- これが正である限り、買い元の ask と売り先の bid を上の段から順に突き合わせて数量を積み上げます（2本のポインタで走査するため、計算量は段数に比例）
+- 純利益 = 売り受取代金 − 買い約定代金 − 両手数料。数量に固定の上限・下限はありません。受信した板の段数が実質的な上限で、板を使い切った場合は「実際の機会はこれより大きい可能性がある」と表示します
+- 手数料は損益を USDT に統一するため、買いは約定代金への上乗せ、売りは受取代金からの控除として扱います。手数料率は `takerFeeRate` で取引所ごとに設定できます（既定 0.1%）
+
+同じ取引所の bid < ask である限り、両方向が同時に利益になることはありません。
+
+### 機会（履歴の1件）の定義
+
+ある通貨ペア・方向について、手数料込みの純利益が正になった時点で機会が始まり、正でなくなった時点（または取引所の切断）で終わります。継続中は純利益の最大値とそのときの数量・平均価格を更新します。履歴はメモリ上に最新 `history.limit` 件（既定 200）を保持し、サーバー再起動で消えます。
+
+### データの鮮度
+
+「n 秒以上古いデータは無効」といった時間の閾値は設けていません。板の更新頻度は市場の動き次第（OKX は変化があったときだけ配信）で、時間では判断できないためです。代わりに、取引所との接続が切れたらその取引所の板をすべて破棄し、再接続して新しい板が届くまで評価しません。画面には各板の最終更新からの経過時間を表示しています。接続の生存は WebSocket の ping/pong と受信タイムアウトで監視し、切れたら指数バックオフで再接続します。
+
+### 注意
+
+- 表示される利益は板のスナップショットに基づく理論値です。実際の約定では、注文の到達までの板の変化、取引所間の資金移動、最小注文数量や刻み、手数料ティアの違いなどにより結果が変わります
+- 本ツールは投資助言ではなく、売買の自動執行も行いません
+
+## 設定
+
+設定は「コード内の既定値 → JSON ファイル → 環境変数」の順に上書きされます。JSON の未知のキーはタイプミス防止のためエラーになります。
+
+| キー | 既定値 | 説明 |
+| --- | --- | --- |
+| `server.addr` | `":8080"` | 待ち受けアドレス |
+| `server.allowedOrigins` | `[]` | WebSocket 接続を許可する追加の Origin（同一オリジンは常に許可） |
+| `exchanges[].id` | `binance`, `okx` | 取引所ID（`backend/internal/exchange/registry` に登録されたもの） |
+| `exchanges[].name` | 取引所の既定名 | 表示名 |
+| `exchanges[].takerFeeRate` | `"0.001"` | taker 手数料率（0.001 = 0.1%） |
+| `exchanges[].wsUrl` | 取引所の既定 URL | 接続先の上書き（テストやプロキシ用） |
+| `pairs` | `["BTC/USDT", "ETH/USDT"]` | 通貨ペア（`BASE/QUOTE` 形式） |
+| `history.limit` | `200` | 保持する履歴件数 |
+| `log.level` | `"info"` | `debug` / `info` / `warn` / `error` |
+| `log.format` | `"text"` | `text` / `json` |
+
+環境変数: `ARB_CONFIG`（設定ファイルのパス）、`ARB_ADDR`、`ARB_LOG_LEVEL`、`ARB_LOG_FORMAT`
+
+現状、取引所の API キーなどの機密情報は不要です（公開のマーケットデータのみ使用）。将来必要になった場合も環境変数で渡し、リポジトリには含めない方針です。
+
+### 通貨ペア・取引所の追加
+
+- 通貨ペア: 設定の `pairs` に `"SOL/USDT"` のように追加します。各取引所向けのシンボル表記（`SOLUSDT`, `SOL-USDT`）は自動で組み立てます
+- 取引所: `backend/internal/exchange/` に `exchange.Feed` を実装したパッケージを追加し、`registry` に登録します。検知エンジンは取引所の組み合わせ全てを評価するため、3つ以上の取引所も扱えます
+
+## アーキテクチャ
+
+```
+Binance WS ─┐                                   ┌─ ブラウザ
+            ├─► exchange feeds ─► engine ─► server (hub) ─┤
+OKX WS ─────┘     (板の受信)     (評価・履歴)  (WebSocket 配信)  └─ ブラウザ
+```
+
+```
+backend/
+  cmd/server/            エントリポイント（設定読み込み、シグナル処理、ヘルスチェック）
+  internal/
+    domain/              通貨ペア・板などの基本型
+    arbitrage/           板走査による裁定評価（純粋関数）
+    engine/              板の保持、両方向の評価、機会の履歴、接続状態
+    exchange/            フィード共通のインターフェースと再接続付き WebSocket クライアント
+      binance/ okx/      取引所ごとの購読と解析
+      registry/          取引所IDから実装を引く
+    server/              フロントエンド向け WebSocket 配信（クライアントごとに最新状態へ集約）
+    wire/                配信する JSON の形式
+    config/              設定の読み込みと検証
+    webui/               ビルド済みフロントエンドの埋め込み配信
+    app/                 各部品の組み立て
+frontend/
+  src/
+    protocol/            サーバーメッセージの型と検証
+    state/               受信メッセージを画面用の状態に反映する reducer
+    ws/                  自動再接続付き WebSocket クライアント
+    hooks/               受信・タブ通知・設定保存などのフック
+    components/          画面部品
+    i18n/                日本語 / 英語の文言（ブラウザの言語設定で自動切替）
+    format/              10進文字列の表示整形
+```
+
+### 配信プロトコル（サーバー → ブラウザ、`/ws`）
+
+接続直後に `init`（取引所・全ペアの評価・履歴）を1回送り、以降は変化のあった対象だけを送ります。金額・数量は文字列、時刻は UTC の ISO 8601 です。
+
+| `type` | 内容 |
+| --- | --- |
+| `init` | `exchanges`, `pairs`, `history`, `seq` |
+| `pair` | 通貨ペア1つ分の最新の評価結果 |
+| `episode` | 機会の開始・最大値更新・終了 |
+| `exchange` | 取引所の接続状態の変化 |
+
+`seq` はサーバー全体で単調増加する通し番号で、`init` より古いイベントを受信側が捨てるために使います。配信側はクライアントごとに「対象ごとの最新メッセージ」だけを保持するため、読み出しの遅いクライアントがいても待ち行列が伸びず、他のクライアントにも影響しません。
+
+エンドポイント: `/`（画面）、`/ws`（配信）、`/healthz`（生存確認と取引所の接続状態）
+
+## 開発
+
 ```bash
-# 全サービスのログ
-docker-compose logs -f
-
-# 特定のサービスのログ
-docker-compose logs -f backend
-docker-compose logs -f frontend
+make test        # バックエンド（Docker 内）とフロントエンドのテスト
+make lint        # 静的検査
+make up          # 本番相当の構成で起動
 ```
 
-### 再ビルド
-```bash
-# 全体の再ビルド
-docker-compose up --build
+- バックエンドのタスクは `backend/Makefile`（`make help` で一覧）、フロントエンドは `frontend/package.json` の scripts を参照
+- テストは仕様を説明する名前を付け、仕様の変更はまずテストを変えてから実装します
+- CI（GitHub Actions）では、フォーマット・vet・race テスト・golangci-lint・govulncheck・型検査・Biome・ビルド・Docker イメージの起動確認・秘密情報の混入検査（gitleaks）を行います
 
-# 特定のサービスの再ビルド
-docker-compose up --build backend
-```
+### サプライチェーン対策
 
-### 停止
-```bash
-# 停止
-docker-compose down
+- Go の依存は `gorilla/websocket` と `shopspring/decimal` の2つのみ（いずれも推移的依存なし）。`go.sum` と Go のチェックサム DB で検証
+- フロントエンドの実行時依存は `react` / `react-dom` のみ。lint とフォーマットは単一パッケージの Biome、TSX の変換は Vite 内蔵の機能を使い Babel 系プラグインを入れていません
+- Yarn（Berry）の設定で、依存のインストール時スクリプトを禁止（`enableScripts: false`）し、公開から7日未満のバージョンを取り込まない（`npmMinimalAgeGate`）ようにしています。バージョンは完全固定
+- Docker のベースイメージは digest で固定、実行イメージは distroless（シェル無し・非 root）。GitHub Actions はコミット SHA で固定
+- Dependabot は7日のクールダウン付きで更新を提案します
 
-# ボリュームも削除
-docker-compose down -v
-```
+## ライセンス
 
-## 📊 データフロー
-
-```
-Binance WebSocket ─┐
-                   ├─► Go Backend ─► WebSocket ─► React Frontend
-OKX WebSocket ─────┘    (アービトラージ検知)       (リアルタイムUI)
-```
-
-1. **価格取得**: バックエンドが各取引所のWebSocket APIからbid/ask価格データを取得
-2. **データ検証**: 5秒以内の新鮮な価格データのみを使用
-3. **アービトラージ検知**: 2つの検知パターンで価格差を計算し最適な機会を特定
-4. **利益計算**: 実際の取引可能量を考慮した利益額を算出
-5. **リアルタイム通信**: WebSocketでフロントエンドにリアルタイム配信
-6. **UI更新**: 価格変化時にアニメーション効果で視覚的にフィードバック
-
-## 🔄 新しい通貨ペアの追加
-
-`backend/main.go` を編集：
-
-```go
-// Binance
-binanceSymbols := []string{"BTCUSDT", "ETHUSDT", "ADAUSDT"} // 追加
-
-// OKX  
-okxSymbols := []string{"BTC-USDT", "ETH-USDT", "ADA-USDT"} // 追加
-```
-
-## 🐛 トラブルシューティング
-
-### よくある問題
-
-1. **ポートが使用中**
-```bash
-# ポート確認
-lsof -i :3000
-lsof -i :8080
-
-# Docker Composeでポート変更
-# docker-compose.ymlのportsセクションを編集
-```
-
-2. **コンテナが起動しない**
-```bash
-# ログ確認
-docker-compose logs backend
-docker-compose logs frontend
-
-# コンテナの状態確認
-docker-compose ps
-```
-
-3. **WebSocket接続エラー**
-- バックエンドが正常に起動しているか確認
-- ファイアウォール設定を確認
-- ブラウザの開発者ツールでネットワークエラーを確認
-
-## 📈 パフォーマンス特性
-
-- **レイテンシ**: WebSocket接続により超低遅延でのリアルタイム更新
-- **検知速度**: 5秒以内の新鮮なデータによる高速検知
-- **スケーラビリティ**: Docker環境により水平スケーリングが容易
-- **リソース効率**: Go言語による低メモリ使用量とgoroutineによる並行処理
-- **UI応答性**: 価格変動時の即座のアニメーション反映
-
-## 🔒 セキュリティ
-
-- CORS設定による適切なオリジン制御
-- WebSocket接続の適切なクローズ処理
-- decimal.Decimal による高精度計算（浮動小数点誤差回避）
-- 本番環境では環境変数による設定管理を推奨
-
-## 💡 技術的特徴
-
-### バックエンド（Go）
-- **高精度計算**: `shopspring/decimal` による正確な価格・利益計算
-- **並行処理**: goroutine による複数取引所の同時監視
-- **エラーハンドリング**: WebSocket接続の自動復旧機能
-- **データ管理**: bid/ask 価格の分離管理とstale データフィルタリング
-
-### フロントエンド（React TypeScript）
-- **Material-UI**: モダンなダークテーマデザイン
-- **リアルタイムアニメーション**: 価格変動時のflashアニメーション
-- **多言語対応**: ブラウザ言語検出による自動切り替え
-- **TypeScript**: 型安全なコードによる開発効率向上
-- **ESLint + Prettier**: 一貫したコード品質管理
-
-## �� ライセンス
-
-MIT License 
+MIT License
