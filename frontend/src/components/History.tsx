@@ -12,18 +12,18 @@ interface HistoryProps {
 export function History({ history, exchanges }: HistoryProps) {
   const t = useT();
   return (
-    <section className="history" aria-label={t.historyTitle}>
-      <header className="history__header">
+    <section className="card" aria-label={t.historyTitle}>
+      <div>
         <h2>
           {t.historyTitle} <span className="muted small">({t.historyCount(history.length)})</span>
         </h2>
         <p className="muted small">{t.historyHelp}</p>
-      </header>
+      </div>
       {history.length === 0 ? (
         <p className="muted">{t.historyEmpty}</p>
       ) : (
         <div className="table-scroll">
-          <table className="episodes">
+          <table>
             <thead>
               <tr>
                 <th scope="col">{t.colStarted}</th>
@@ -44,9 +44,11 @@ export function History({ history, exchanges }: HistoryProps) {
               {history.map((ep) => {
                 const [base, quote] = ep.pair.split('/');
                 return (
-                  <tr key={ep.id} className={ep.endedAt === null ? 'is-ongoing' : ''}>
+                  <tr key={ep.id}>
                     <td>
-                      <time dateTime={ep.startedAt}>{formatTime(ep.startedAt)}</time>
+                      <time dateTime={ep.startedAt} title={new Date(ep.startedAt).toLocaleString()}>
+                        {formatTime(ep.startedAt)}
+                      </time>
                     </td>
                     <td>{ep.pair}</td>
                     <td>
@@ -56,9 +58,7 @@ export function History({ history, exchanges }: HistoryProps) {
                       )}
                     </td>
                     <td className="num">
-                      {ep.endedAt === null && (
-                        <span className="badge badge--live">{t.ongoing}</span>
-                      )}{' '}
+                      {ep.endedAt === null && <span className="badge small">{t.ongoing}</span>}{' '}
                       <Duration from={ep.startedAt} to={ep.endedAt} />
                     </td>
                     <td className="num pos">
@@ -79,7 +79,7 @@ export function History({ history, exchanges }: HistoryProps) {
   );
 }
 
-/** ローカル時刻の "HH:MM:SS.mmm"。日付は同日運用が中心なので title 属性に回す */
+/** ローカル時刻の "HH:MM:SS.mmm"。日付は title 属性で確認できる */
 function formatTime(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number, len = 2) => String(n).padStart(len, '0');

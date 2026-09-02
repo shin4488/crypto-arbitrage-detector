@@ -72,7 +72,7 @@ describe('Dashboard', () => {
     };
     renderDashboard(state);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
-    expect(btc.className).toContain('board--profitable');
+    expect(btc.className).toContain('card--profitable');
     expect(within(btc).getAllByText('利益あり').length).toBeGreaterThan(0);
     expect(within(btc).getByText('0.3 BTC')).toBeTruthy();
     expect(within(btc).getAllByText('+0.2397 USDT').length).toBeGreaterThan(0);

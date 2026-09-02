@@ -11,7 +11,7 @@ interface PairBoardProps {
   exchanges: ExchangeInfo[];
 }
 
-/** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の0は落とす */
+/** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
 const PRICE_DIGITS = 8;
 /** 数量（Base 通貨）の表示桁数 */
 const QUANTITY_DIGITS = 8;
@@ -19,8 +19,8 @@ const QUANTITY_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの板。取引所ごとの最良気配と、両方向の評価結果を表にして並べる。
- * memo にしているのは、別ペアの更新で再描画されないようにするため（ペアの更新頻度は秒間数十回）。
+ * 1つの通貨ペアの板。取引所ごとの最良気配と、両方向の評価結果を表で並べる。
+ * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
 export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardProps) {
   const t = useT();
@@ -31,11 +31,11 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardP
   });
 
   return (
-    <section className={`board ${best ? 'board--profitable' : ''}`} aria-label={pair.pair}>
-      <header className="board__header">
+    <section className={`card ${best ? 'card--profitable' : ''}`} aria-label={pair.pair}>
+      <header className="card__header">
         <h2>{pair.pair}</h2>
         {best ? (
-          <span className="badge badge--profit">
+          <span className="badge">
             {t.profitable}{' '}
             <Flash value={best.netProfit}>
               {formatDecimal(best.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
@@ -43,25 +43,23 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardP
             </Flash>
           </span>
         ) : (
-          <span className="badge badge--none">{t.noOpportunity}</span>
+          <span className="muted">{t.noOpportunity}</span>
         )}
       </header>
 
       {quoteEntries.length === 0 ? (
-        <p className="muted board__empty">{t.waitingForData}</p>
+        <p className="muted">{t.waitingForData}</p>
       ) : (
         <div className="table-scroll">
-          <table className="quotes">
+          <table>
             <thead>
               <tr>
                 <th scope="col">{t.colExchange}</th>
                 <th scope="col" className="num">
                   {t.colBid}
-                  <span className="muted th-sub">{t.priceAndQuantity}</span>
                 </th>
                 <th scope="col" className="num">
                   {t.colAsk}
-                  <span className="muted th-sub">{t.priceAndQuantity}</span>
                 </th>
                 <th scope="col" className="num">
                   {t.colUpdated}
@@ -84,7 +82,7 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardP
       )}
 
       <div className="table-scroll">
-        <table className="directions">
+        <table>
           <thead>
             <tr>
               <th scope="col">{t.colDirection}</th>
@@ -173,7 +171,7 @@ function DirectionRow({ direction: d, pair, exchanges }: DirectionRowProps) {
   const buy = exchangeName(exchanges, d.buyExchange);
   const sell = exchangeName(exchanges, d.sellExchange);
   const signClass = (v: string) => ({ '-1': 'neg', '0': '', '1': 'pos' })[String(signOf(v))];
-  // 1単位あたりの値は価格の刻み（小数桁数）に合わせて丸める。手数料の乗算で増えた末尾桁は判断に不要なため
+  // 1単位あたりの値は価格の刻み（小数桁数）に合わせて丸める。手数料を掛けて増えた末尾の桁は判断に使わない
   const spreadDigits = Math.max(
     2,
     fractionDigitsOf(d.bestAsk.price),
@@ -220,25 +218,23 @@ function DirectionRow({ direction: d, pair, exchanges }: DirectionRowProps) {
       {d.profitable && (
         <tr className="is-profitable detail">
           <td colSpan={5}>
-            <span>
-              {t.avgBuyPrice} {formatDecimal(d.avgBuyPrice, { maxFractionDigits: PRICE_DIGITS })}
-            </span>
-            <span>
-              {t.avgSellPrice} {formatDecimal(d.avgSellPrice, { maxFractionDigits: PRICE_DIGITS })}
-            </span>
-            <span>
-              {t.grossProfit}{' '}
-              {formatDecimal(d.grossProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
-              {pair.quote}
-            </span>
-            <span>
-              {t.fees}{' '}
-              {formatDecimal(sumDecimals(d.buyFee, d.sellFee), {
-                maxFractionDigits: AMOUNT_DIGITS,
-              })}{' '}
-              {pair.quote}
-            </span>
-            {d.depthExhausted && <span className="note">{t.depthExhausted}</span>}
+            {t.avgBuyPrice} {formatDecimal(d.avgBuyPrice, { maxFractionDigits: PRICE_DIGITS })}
+            {' · '}
+            {t.avgSellPrice} {formatDecimal(d.avgSellPrice, { maxFractionDigits: PRICE_DIGITS })}
+            {' · '}
+            {t.grossProfit}{' '}
+            {formatDecimal(d.grossProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
+            {pair.quote}
+            {' · '}
+            {t.fees}{' '}
+            {formatDecimal(sumDecimals(d.buyFee, d.sellFee), { maxFractionDigits: AMOUNT_DIGITS })}{' '}
+            {pair.quote}
+            {d.depthExhausted && (
+              <>
+                <br />
+                <span className="warn">{t.depthExhausted}</span>
+              </>
+            )}
           </td>
         </tr>
       )}
@@ -246,7 +242,7 @@ function DirectionRow({ direction: d, pair, exchanges }: DirectionRowProps) {
   );
 }
 
-/** 手数料の合計表示用。値は小数8桁以内なので Number で十分な精度が出る */
+/** 手数料の合計表示用。値は小数8桁以内なので Number でも精度は足りる */
 function sumDecimals(a: string, b: string): string {
   return (Number(a) + Number(b)).toFixed(8);
 }

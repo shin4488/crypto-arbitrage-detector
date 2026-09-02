@@ -26,7 +26,6 @@ export const ja = {
   colNetSpread: '手数料込み / 1単位',
   colQuantity: '数量',
   colNetProfit: '純利益',
-  priceAndQuantity: '価格（数量）',
 
   direction: (buy: string, sell: string) => `${buy} で買い → ${sell} で売り`,
   profitable: '利益あり',

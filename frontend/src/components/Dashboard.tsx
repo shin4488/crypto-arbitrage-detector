@@ -10,7 +10,7 @@ interface DashboardProps {
   onTabNotificationChange: (enabled: boolean) => void;
 }
 
-/** 画面全体の見た目。データの取得や設定の保存は持たず、渡された状態を表示するだけ（テストしやすさのため） */
+/** 画面全体。データの取得や設定の保存は持たず、渡された状態を表示するだけにしてテストしやすくしている */
 export function Dashboard({ state, tabNotification, onTabNotificationChange }: DashboardProps) {
   const t = useT();
   return (
@@ -22,7 +22,7 @@ export function Dashboard({ state, tabNotification, onTabNotificationChange }: D
         onTabNotificationChange={onTabNotificationChange}
       />
       {state.connection === 'disconnected' && state.initialized && (
-        <p className="banner banner--warn" role="status">
+        <p className="warn" role="status">
           {t.serverDisconnected}
         </p>
       )}

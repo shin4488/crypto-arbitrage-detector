@@ -26,47 +26,44 @@ export function Header({
 
   return (
     <header className="header">
-      <div className="header__title">
+      <div>
         <h1>{t.appTitle}</h1>
         <p className="muted">{t.appDescription}</p>
       </div>
-      <dl className="status-list" aria-label="status">
-        <div className={`status status--${connection}`}>
-          <dt>{t.server}</dt>
-          <dd>
-            <span className="dot" aria-hidden="true" />
-            {serverLabel}
-          </dd>
-        </div>
+      <ul className="status-list" aria-label="status">
+        <li>
+          <Dot ok={connection === 'connected'} />
+          <strong>{t.server}:</strong> {serverLabel}
+        </li>
         {exchanges.map((ex) => (
-          <div
-            key={ex.id}
-            className={`status status--${ex.connected ? 'connected' : 'disconnected'}`}
-          >
-            <dt>{ex.name}</dt>
-            <dd>
-              <span className="dot" aria-hidden="true" />
-              {ex.connected ? t.exchangeConnected : t.exchangeDisconnected}
-              <span className="muted">
-                {' '}
-                (<Age since={ex.since} />)
-              </span>
-              <span className="muted">
-                {' · '}
-                {t.takerFee} {formatPercent(ex.takerFeeRate, 3).replace('+', '')}
-              </span>
-            </dd>
-          </div>
+          <li key={ex.id}>
+            <Dot ok={ex.connected} />
+            <strong>{ex.name}:</strong>{' '}
+            {ex.connected ? t.exchangeConnected : t.exchangeDisconnected}{' '}
+            <span className="muted">
+              (<Age since={ex.since} />) · {t.takerFee}{' '}
+              {formatPercent(ex.takerFeeRate, 3).replace('+', '')}
+            </span>
+          </li>
         ))}
-      </dl>
-      <label className="toggle" title={t.tabTitleNotificationHelp}>
+      </ul>
+      <label title={t.tabTitleNotificationHelp}>
         <input
           type="checkbox"
           checked={tabNotification}
           onChange={(e) => onTabNotificationChange(e.target.checked)}
-        />
+        />{' '}
         {t.tabTitleNotification}
       </label>
     </header>
+  );
+}
+
+/** 接続状態を色で示す点。緑＝接続中、赤＝切断 */
+function Dot({ ok }: { ok: boolean }) {
+  return (
+    <span className={ok ? 'pos' : 'neg'} aria-hidden="true">
+      ●{' '}
+    </span>
   );
 }

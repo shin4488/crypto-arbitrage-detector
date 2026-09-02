@@ -28,7 +28,6 @@ export const en: Dict = {
   colNetSpread: 'After fees / unit',
   colQuantity: 'Quantity',
   colNetProfit: 'Net profit',
-  priceAndQuantity: 'price (quantity)',
 
   direction: (buy: string, sell: string) => `Buy on ${buy} → sell on ${sell}`,
   profitable: 'Profitable',
