@@ -1,5 +1,5 @@
-// Package arbitrage は2つの取引所の板から裁定機会を評価する純粋な計算ロジックを提供する。
-// 状態を持たないため、接続や配信の都合と切り離して仕様どおりに動くことをテストで保証しやすい。
+// Package arbitrage は、2つの取引所の板から裁定機会を評価する計算だけを担当する。
+// 状態を持たない純粋関数なので、接続や配信の都合と切り離して、仕様どおりに動くことをテストで確かめやすい。
 package arbitrage
 
 import (
@@ -36,7 +36,7 @@ type Result struct {
 	GrossSpreadRatio decimal.Decimal
 	// NetSpread は最良気配ベースの1単位あたり手数料込み損益。負になり得る。
 	NetSpread decimal.Decimal
-	// Profitable は NetSpread > 0。以下の板走査結果は Profitable のときだけ意味を持つ。
+	// Profitable は NetSpread > 0 かどうか。これより下の板走査の結果は、Profitable のときだけ意味がある。
 	Profitable bool
 
 	// Quantity は手数料込みで利益が出る範囲で板を突き合わせて得た取引可能数量（Base 通貨建て）。
@@ -132,6 +132,6 @@ func walk(r *Result, asks, bids []domain.Level, netPerUnit func(ask, bid decimal
 			}
 		}
 	}
-	// ループを抜けた＝まだ黒字の段があり得る状態でどちらかの板を使い切った。
+	// ここに来るのは、まだ黒字のままどちらかの板を使い切ったとき。
 	r.DepthExhausted = true
 }

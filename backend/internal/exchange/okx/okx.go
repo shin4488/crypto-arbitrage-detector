@@ -123,7 +123,7 @@ func (f *Feed) handleMessage(raw []byte) error {
 	if err != nil {
 		var subErr *subscriptionError
 		if asSubscriptionError(err, &subErr) {
-			// 購読の拒否は接続し直しても直らない（設定ミスなど）ため、記録して継続する。
+			// 購読が拒否されるのは設定ミスなどが原因で、つなぎ直しても直らない。ログに残して処理は続ける。
 			f.cfg.Logger.Error("OKX の購読が拒否されました", "code", subErr.code, "msg", subErr.msg)
 			return nil
 		}

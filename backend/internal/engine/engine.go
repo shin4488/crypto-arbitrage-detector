@@ -49,7 +49,7 @@ type PairSnapshot struct {
 	Pair domain.Pair
 	// Quotes は板を受信済みの取引所の最良気配。
 	Quotes map[domain.Exchange]Quote
-	// Directions は評価できた方向（両取引所の板が揃っているもの）の結果。取引所設定順の順列。
+	// Directions は評価できた方向（両方の板がそろっているもの）の結果。取引所の設定順で「買い元→売り先」の全組み合わせ。
 	Directions []arbitrage.Result
 	UpdatedAt  time.Time
 }
@@ -124,7 +124,7 @@ type State struct {
 	History []Episode
 }
 
-// Engine は板の保持と裁定機会の評価を行う。全メソッドは並行に呼び出せる。
+// Engine は板を保持し、裁定機会を評価する。どのメソッドも並行に呼び出せる。
 type Engine struct {
 	cfg  Config
 	fees map[domain.Exchange]decimal.Decimal

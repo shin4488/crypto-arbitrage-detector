@@ -1,5 +1,5 @@
-// Package domain は取引所・通貨ペア・板といった、アプリケーション全体で共有する基本概念を定義する。
-// 外部ライブラリへの依存は decimal のみに留め、他パッケージから安心して参照できるようにしている。
+// Package domain は、取引所・通貨ペア・板といったアプリ全体で共有する基本の型を定義する。
+// 依存は decimal だけに絞り、どのパッケージからも気兼ねなく参照できるようにしている。
 package domain
 
 import (
@@ -76,7 +76,7 @@ func (b OrderBook) BestAsk() (Level, bool) {
 	return b.Asks[0], true
 }
 
-// Validate は板の整合性を検査する。取引所からの受信データを信用しすぎて誤検知しないための防御。
+// Validate は板の整合性を検査する。取引所から届いたデータをそのまま信じて誤検知しないための防御。
 func (b OrderBook) Validate() error {
 	if b.Exchange == "" {
 		return errors.New("取引所が未設定です")

@@ -47,8 +47,8 @@ func (c FeedConfig) Normalize() FeedConfig {
 }
 
 // ParseLevels は [["price","qty"], ...] 形式の板を Level に変換する共通処理。
-// 数量が 0 の段（取引所によっては削除の意味で送られる）は除外する。
-// parse は文字列→数値の変換で、取引所ごとに要素数が違う（OKX は4要素）ため呼び出し側で先頭2要素を渡す。
+// 数量が 0 の段は除外する（取引所によっては「この段が消えた」という意味で送ってくる）。
+// 1段の要素数は取引所によって違う（OKX は4要素）ので、先頭の2要素（価格・数量）だけを parse に渡す。
 func ParseLevels(raw [][]string, parse func(s string) (domain.Level, bool, error)) ([]domain.Level, error) {
 	levels := make([]domain.Level, 0, len(raw))
 	for _, entry := range raw {

@@ -17,7 +17,7 @@ import (
 	"github.com/shin4488/crypto-arbitrage-detector/backend/internal/wire"
 )
 
-// StateProvider は接続直後に送る全状態を提供する（通常はエンジン）。
+// StateProvider は、接続直後に送る全状態の取得元（通常はエンジン）。
 type StateProvider interface {
 	Snapshot() engine.State
 }

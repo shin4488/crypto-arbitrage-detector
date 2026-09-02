@@ -1,5 +1,5 @@
-// Package wsclient は取引所の WebSocket API へ接続し、切断時に自動で再接続する共通の仕組みを提供する。
-// 取引所ごとの購読メッセージや keep-alive の方式は Options の関数で差し替える。
+// Package wsclient は取引所の WebSocket API につなぎ、切れたら自動でつなぎ直す共通処理。
+// 購読メッセージや keep-alive の方式は取引所ごとに違うので、Options の関数で差し替える。
 package wsclient
 
 import (
@@ -31,8 +31,8 @@ type Options struct {
 	// KeepAlive は KeepAliveInterval ごとに呼ばれる。nil なら WebSocket の ping フレームを送る。
 	KeepAlive         func(conn *websocket.Conn) error
 	KeepAliveInterval time.Duration
-	// ReadTimeout はこの時間メッセージが届かなければ接続が死んだとみなして再接続する。
-	// 取引所は無通信時でも ping や pong を送ってくるため、通常は市場が静かでも届く。
+	// ReadTimeout の間なにも届かなければ、接続が切れたとみなしてつなぎ直す。
+	// 相場が静かでも取引所は ping や pong を送ってくるので、通常はこの時間内に何かしら届く。
 	ReadTimeout      time.Duration
 	HandshakeTimeout time.Duration
 	// MinBackoff / MaxBackoff は再接続の待ち時間（指数的に増やし、ジッタを加える）。

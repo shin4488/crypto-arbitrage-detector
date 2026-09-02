@@ -1,6 +1,6 @@
 /**
- * アプリ内で唯一 console に触る場所。通常運用で出るログはここを通す想定で、
- * 開発時のデバッグ出力が本番に残らないよう lint（noConsole）で他の場所を検出する。
+ * アプリの中で console を使うのはここだけ。ほかの場所で console を使うと lint（noConsole）が警告するので、
+ * 開発中のデバッグ出力が残らない。
  */
 export const log = {
   warn(message: string, detail?: unknown): void {

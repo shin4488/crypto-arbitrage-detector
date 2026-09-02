@@ -1,6 +1,6 @@
 // Package webui はビルド済みフロントエンド（frontend/dist）をバイナリに埋め込んで配信する。
 //
-// 単一バイナリ・単一コンテナで完結させ、実行環境から nginx や Node.js を排除するための構成。
+// バイナリ1つ・コンテナ1つで完結させ、実行環境に nginx や Node.js を置かずに済ませるため。
 // 埋め込むファイルはビルド時に dist/ へコピーされる（Dockerfile と Makefile を参照）。
 package webui
 
