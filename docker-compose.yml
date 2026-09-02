@@ -1,49 +1,23 @@
-version: '3.8'
-
+# 本番相当の構成でローカル実行する: docker compose up --build
+# 画面: http://localhost:8080
 services:
-  # Backend (Go)
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: crypto-arb-backend
+  app:
+    build: .
+    image: crypto-arbitrage-detector:local
+    container_name: crypto-arbitrage-detector
     ports:
       - "8080:8080"
     environment:
-      - GO_ENV=development
-    networks:
-      - crypto-arb-network
+      # 設定ファイルを使う場合は volumes でマウントして ARB_CONFIG にパスを指定する
+      # - ARB_CONFIG=/config.json
+      - ARB_LOG_FORMAT=json
+      - ARB_LOG_LEVEL=info
+    # volumes:
+    #   - ./config.json:/config.json:ro
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://0.0.0.0:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Frontend (React)
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: crypto-arb-frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8080
-      - REACT_APP_WS_URL=ws://localhost:8080/ws
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
-    volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-    networks:
-      - crypto-arb-network
-    depends_on:
-      - backend
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
-
-networks:
-  crypto-arb-network:
-    driver: bridge 
+    # 実行時の権限を最小にする（読み取り専用ファイルシステム、権限昇格の禁止、ケーパビリティ全削除）
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
