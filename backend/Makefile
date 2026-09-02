@@ -1,14 +1,14 @@
 # バックエンド（Go）の開発用タスク
 #
-# このMacにはGoをインストールしない方針のため、既定ではDockerコンテナ内でGoを実行する。
-# ローカルにGoがある環境やCIでは `make test GO=go` のように上書きできる。
+# Go はローカルに入れない前提なので、既定では Docker コンテナの中で go コマンドを動かす。
+# ローカルに Go がある環境や CI では `make test GO=go` のように上書きできる。
 
 GO_IMAGE      ?= golang:1.24-alpine
 LINT_IMAGE    ?= golangci/golangci-lint:v2.1.6
 MOD_CACHE     ?= crypto-arb-gomod
 BUILD_CACHE   ?= crypto-arb-gobuild
 
-# コンテナ内で実行する go コマンド。モジュールとビルドのキャッシュを名前付きボリュームに保持して2回目以降を高速化する。
+# コンテナ内で動かす go コマンド。モジュールとビルドのキャッシュは名前付きボリュームに残し、2回目以降を速くする。
 DOCKER_GO = docker run --rm -t \
 	-v "$(CURDIR)":/src -w /src \
 	-v $(MOD_CACHE):/go/pkg/mod \
@@ -34,7 +34,7 @@ vet: ## 静的検査（go vet）
 test: ## テスト実行
 	$(GO) test ./...
 
-test-race: ## データ競合検出付きテスト（CGOが必要なためローカルGo向け。Docker内では -race を省略）
+test-race: ## データ競合の検出付きテスト（CGO が必要なので golang:1.24 などの glibc イメージかローカルの Go で実行する）
 	$(GO) test -race ./...
 
 cover: ## カバレッジ計測
@@ -46,8 +46,8 @@ lint: ## golangci-lint 実行
 build: ## バイナリをビルド（bin/server）
 	$(GO) build -o bin/server ./cmd/server
 
-run: ## サーバーをローカル実行（Docker内、ポート8080）
-	docker run --rm -it -v "$(CURDIR)":/src -w /src -v $(MOD_CACHE):/go/pkg/mod -v $(BUILD_CACHE):/root/.cache/go-build -p 8080:8080 $(GO_IMAGE) go run ./cmd/server
+run: ## 開発用にサーバーを起動（docker compose の backend-dev、ポート8080）
+	cd .. && docker compose --profile dev up backend-dev
 
 clean: ## 生成物を削除
 	rm -rf bin coverage.out

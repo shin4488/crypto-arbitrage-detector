@@ -1,6 +1,6 @@
 # リポジトリ全体の開発タスク。個別のタスクは backend/Makefile と frontend/package.json を参照。
 
-.PHONY: help test lint build up down logs backend-test backend-lint frontend-test frontend-lint
+.PHONY: help test lint build up dev down logs backend-test backend-lint frontend-test frontend-lint
 
 help: ## タスク一覧を表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -26,6 +26,9 @@ build: ## 本番用 Docker イメージをビルド
 
 up: ## 本番相当の構成で起動（http://localhost:8080）
 	docker compose up --build
+
+dev: ## 開発用に起動（画面 http://localhost:3000、バックエンド 8080。ソースの変更が反映される）
+	docker compose --profile dev up backend-dev frontend-dev
 
 down: ## 停止
 	docker compose down
