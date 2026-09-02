@@ -1,8 +1,8 @@
 import { memo } from 'react';
-import { formatDecimal, formatPercent, fractionDigitsOf, signOf } from '../format/number';
+import { formatDecimal, fractionDigitsOf } from '../format/number';
 import { useT } from '../i18n';
-import type { Direction, ExchangeInfo, PairSnapshot, Quote } from '../protocol/types';
-import { exchangeName, profitableDirection } from '../state/selectors';
+import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
+import { bestDirection, exchangeName, feePerUnit } from '../state/selectors';
 import { Age } from './Age';
 import { Flash } from './Flash';
 
@@ -19,230 +19,225 @@ const QUANTITY_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの板。取引所ごとの最良気配と、両方向の評価結果を表で並べる。
+ * 1つの通貨ペアの枠。上から順に「今の状態 → その理由（価格差と手数料の内訳）→ 各取引所の価格」と読める並びにする。
+ * 数量や板の深さ、もう一方の方向は普段は見なくてよいので「詳細」に畳む。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
 export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardProps) {
   const t = useT();
-  const best = profitableDirection(pair);
-  const quoteEntries = exchanges.flatMap((ex) => {
-    const q = pair.quotes[ex.id];
-    return q ? [{ exchange: ex, quote: q }] : [];
-  });
+  const best = bestDirection(pair);
+  const hasQuotes = Object.keys(pair.quotes).length > 0;
+  const badge = best?.profitable
+    ? { className: 'badge', text: t.badgeProfitable }
+    : hasQuotes
+      ? { className: 'muted', text: t.badgeNone }
+      : { className: 'muted', text: t.badgeWaiting };
 
   return (
-    <section className={`card ${best ? 'card--profitable' : ''}`} aria-label={pair.pair}>
+    <section
+      className={`card ${best?.profitable ? 'card--profitable' : ''}`}
+      aria-label={pair.pair}
+    >
       <header className="card__header">
         <h2>{pair.pair}</h2>
-        {best ? (
-          <span className="badge">
-            {t.profitable}{' '}
-            <Flash value={best.netProfit}>
-              {formatDecimal(best.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
-              {pair.quote}
-            </Flash>
-          </span>
-        ) : (
-          <span className="muted">{t.noOpportunity}</span>
-        )}
+        <span className={badge.className}>{badge.text}</span>
       </header>
 
-      {quoteEntries.length === 0 ? (
+      {!hasQuotes ? (
         <p className="muted">{t.waitingForData}</p>
+      ) : best === null ? (
+        <p className="muted">{t.notEvaluable}</p>
       ) : (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">{t.colExchange}</th>
-                <th scope="col" className="num">
-                  {t.colBid}
-                </th>
-                <th scope="col" className="num">
-                  {t.colAsk}
-                </th>
-                <th scope="col" className="num">
-                  {t.colUpdated}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {quoteEntries.map(({ exchange, quote }) => (
-                <QuoteRow
-                  key={exchange.id}
-                  name={exchange.name}
-                  quote={quote}
-                  base={pair.base}
-                  levelsLabel={t.levels(Math.max(quote.bidLevels, quote.askLevels))}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Verdict direction={best} pair={pair} exchanges={exchanges} />
       )}
 
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t.colDirection}</th>
-              <th scope="col" className="num">
-                {t.colGrossSpread}
-              </th>
-              <th scope="col" className="num">
-                {t.colNetSpread}
-              </th>
-              <th scope="col" className="num">
-                {t.colQuantity}
-              </th>
-              <th scope="col" className="num">
-                {t.colNetProfit}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {pair.directions.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="muted">
-                  {t.notEvaluable}
-                </td>
-              </tr>
-            ) : (
-              pair.directions.map((d) => (
-                <DirectionRow
-                  key={`${d.buyExchange}>${d.sellExchange}`}
-                  direction={d}
-                  pair={pair}
-                  exchanges={exchanges}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} />}
+
+      {hasQuotes && (
+        <details>
+          <summary>{t.details}</summary>
+          <Details pair={pair} exchanges={exchanges} best={best} />
+        </details>
+      )}
     </section>
   );
 });
 
-interface QuoteRowProps {
-  name: string;
-  quote: Quote;
-  base: string;
-  levelsLabel: string;
-}
-
-function QuoteRow({ name, quote, base, levelsLabel }: QuoteRowProps) {
-  return (
-    <tr>
-      <th scope="row">
-        {name} <span className="muted small">({levelsLabel})</span>
-      </th>
-      <td className="num">
-        <Flash value={quote.bid.price}>
-          {formatDecimal(quote.bid.price, { maxFractionDigits: PRICE_DIGITS })}
-        </Flash>{' '}
-        <span className="muted small">
-          ({formatDecimal(quote.bid.quantity, { maxFractionDigits: QUANTITY_DIGITS })} {base})
-        </span>
-      </td>
-      <td className="num">
-        <Flash value={quote.ask.price}>
-          {formatDecimal(quote.ask.price, { maxFractionDigits: PRICE_DIGITS })}
-        </Flash>{' '}
-        <span className="muted small">
-          ({formatDecimal(quote.ask.quantity, { maxFractionDigits: QUANTITY_DIGITS })} {base})
-        </span>
-      </td>
-      <td className="num muted small">
-        <Age since={quote.updatedAt} />
-      </td>
-    </tr>
-  );
-}
-
-interface DirectionRowProps {
+interface VerdictProps {
   direction: Direction;
   pair: PairSnapshot;
   exchanges: ExchangeInfo[];
 }
 
-function DirectionRow({ direction: d, pair, exchanges }: DirectionRowProps) {
+/** 今の状態を一文で言い切り、価格差と手数料の内訳でその理由を示す */
+function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   const t = useT();
   const buy = exchangeName(exchanges, d.buyExchange);
   const sell = exchangeName(exchanges, d.sellExchange);
-  const signClass = (v: string) => ({ '-1': 'neg', '0': '', '1': 'pos' })[String(signOf(v))];
-  // 1単位あたりの値は価格の刻み（小数桁数）に合わせて丸める。手数料を掛けて増えた末尾の桁は判断に使わない
-  const spreadDigits = Math.max(
-    2,
-    fractionDigitsOf(d.bestAsk.price),
-    fractionDigitsOf(d.bestBid.price),
-  );
 
   return (
-    <>
-      <tr className={d.profitable ? 'is-profitable' : ''}>
-        <th scope="row">{t.direction(buy, sell)}</th>
-        <td className={`num ${signClass(d.grossSpread)}`}>
-          <Flash value={d.grossSpread}>
-            {formatDecimal(d.grossSpread, { maxFractionDigits: spreadDigits, signed: true })}
-          </Flash>{' '}
-          <span className="muted small">({formatPercent(d.grossSpreadRatio)})</span>
-        </td>
-        <td className={`num ${signClass(d.netSpread)}`}>
-          <Flash value={d.netSpread}>
-            {formatDecimal(d.netSpread, { maxFractionDigits: spreadDigits, signed: true })}
-          </Flash>
-        </td>
-        <td className="num">
-          {d.profitable ? (
-            <Flash value={d.quantity}>
-              {formatDecimal(d.quantity, { maxFractionDigits: QUANTITY_DIGITS })} {pair.base}
+    <div>
+      {d.profitable ? (
+        <p className="lead">
+          {t.leadProfitable(
+            buy,
+            `${formatDecimal(d.quantity, { maxFractionDigits: QUANTITY_DIGITS })} ${pair.base}`,
+            sell,
+          )}{' '}
+          <strong className="pos">
+            <Flash value={d.netProfit}>
+              {t.leadProfit(
+                `${formatDecimal(d.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })} ${pair.quote}`,
+              )}
             </Flash>
-          ) : (
-            <span className="muted">—</span>
-          )}
-        </td>
-        <td className="num pos">
-          {d.profitable ? (
-            <strong>
-              <Flash value={d.netProfit}>
-                {formatDecimal(d.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
-                {pair.quote}
-              </Flash>
-            </strong>
-          ) : (
-            <span className="muted">—</span>
-          )}
-        </td>
-      </tr>
-      {d.profitable && (
-        <tr className="is-profitable detail">
-          <td colSpan={5}>
-            {t.avgBuyPrice} {formatDecimal(d.avgBuyPrice, { maxFractionDigits: PRICE_DIGITS })}
-            {' · '}
-            {t.avgSellPrice} {formatDecimal(d.avgSellPrice, { maxFractionDigits: PRICE_DIGITS })}
-            {' · '}
-            {t.grossProfit}{' '}
-            {formatDecimal(d.grossProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
-            {pair.quote}
-            {' · '}
-            {t.fees}{' '}
-            {formatDecimal(sumDecimals(d.buyFee, d.sellFee), { maxFractionDigits: AMOUNT_DIGITS })}{' '}
-            {pair.quote}
-            {d.depthExhausted && (
-              <>
-                <br />
-                <span className="warn">{t.depthExhausted}</span>
-              </>
-            )}
-          </td>
-        </tr>
+          </strong>
+        </p>
+      ) : (
+        <p className="lead">{t.leadNone(buy, sell)}</p>
       )}
-    </>
+      <Breakdown direction={d} pair={pair} />
+      {!d.profitable && (
+        <p className="muted small">
+          {t.shortfall(
+            `${formatDecimal(d.netSpread.replace('-', ''), { maxFractionDigits: spreadDigits(d) })} ${pair.quote}`,
+            pair.base,
+          )}
+        </p>
+      )}
+      {d.profitable && d.depthExhausted && <p className="warn small">{t.depthExhausted}</p>}
+    </div>
   );
 }
 
-/** 手数料の合計表示用。値は小数8桁以内なので Number でも精度は足りる */
-function sumDecimals(a: string, b: string): string {
-  return (Number(a) + Number(b)).toFixed(8);
+/** 1単位あたりの内訳: 価格差 − 手数料 = 手数料込み */
+function Breakdown({ direction: d, pair }: { direction: Direction; pair: PairSnapshot }) {
+  const t = useT();
+  const digits = spreadDigits(d);
+  const amount = (v: string) =>
+    `${formatDecimal(v, { maxFractionDigits: digits, signed: true })} ${pair.quote}`;
+  return (
+    <table className="breakdown">
+      <caption className="muted small">{t.perUnit(pair.base)}</caption>
+      <tbody>
+        <tr>
+          <th scope="row">{t.rowSpread}</th>
+          <td className="num">
+            <Flash value={d.grossSpread}>{amount(d.grossSpread)}</Flash>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row">{t.rowFees}</th>
+          <td className="num">{amount(`-${feePerUnit(d)}`)}</td>
+        </tr>
+        <tr className="total">
+          <th scope="row">{t.rowNet}</th>
+          <td className={`num ${d.profitable ? 'pos' : 'neg'}`}>
+            <Flash value={d.netSpread}>{amount(d.netSpread)}</Flash>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+/** 1単位あたりの値は価格の刻み（小数桁数）に合わせて丸める。手数料を掛けて増えた末尾の桁は判断に使わない */
+function spreadDigits(d: Direction): number {
+  return Math.max(2, fractionDigitsOf(d.bestAsk.price), fractionDigitsOf(d.bestBid.price));
+}
+
+/** 取引所ごとの「売れる価格」「買える価格」 */
+function QuoteTable({ pair, exchanges }: { pair: PairSnapshot; exchanges: ExchangeInfo[] }) {
+  const t = useT();
+  return (
+    <div className="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">{t.colExchange}</th>
+            <th scope="col" className="num">
+              {t.colSellPrice}
+            </th>
+            <th scope="col" className="num">
+              {t.colBuyPrice}
+            </th>
+            <th scope="col" className="num">
+              {t.colUpdated}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {exchanges.flatMap((ex) => {
+            const q = pair.quotes[ex.id];
+            if (!q) {
+              return [];
+            }
+            return [
+              <tr key={ex.id}>
+                <th scope="row">{ex.name}</th>
+                <td className="num">
+                  <Flash value={q.bid.price}>
+                    {formatDecimal(q.bid.price, { maxFractionDigits: PRICE_DIGITS })}
+                  </Flash>
+                </td>
+                <td className="num">
+                  <Flash value={q.ask.price}>
+                    {formatDecimal(q.ask.price, { maxFractionDigits: PRICE_DIGITS })}
+                  </Flash>
+                </td>
+                <td className="num muted small">
+                  <Age since={q.updatedAt} />
+                </td>
+              </tr>,
+            ];
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+interface DetailsProps {
+  pair: PairSnapshot;
+  exchanges: ExchangeInfo[];
+  best: Direction | null;
+}
+
+/** 普段は見なくてよい情報: 最良気配の数量と板の段数、もう一方の方向の内訳 */
+function Details({ pair, exchanges, best }: DetailsProps) {
+  const t = useT();
+  const other = pair.directions.find((d) => d !== best);
+  return (
+    <div className="details">
+      <ul>
+        {exchanges.flatMap((ex) => {
+          const q = pair.quotes[ex.id];
+          if (!q) {
+            return [];
+          }
+          return [
+            <li key={ex.id}>
+              <strong>{ex.name}</strong>:{' '}
+              {t.detailQuantity(
+                `${formatDecimal(q.bid.quantity, { maxFractionDigits: QUANTITY_DIGITS })} ${pair.base}`,
+                `${formatDecimal(q.ask.quantity, { maxFractionDigits: QUANTITY_DIGITS })} ${pair.base}`,
+                Math.max(q.bidLevels, q.askLevels),
+              )}
+            </li>,
+          ];
+        })}
+      </ul>
+      {other && (
+        <div>
+          <p>
+            <strong>{t.otherDirection}</strong>:{' '}
+            {t.direction(
+              exchangeName(exchanges, other.buyExchange),
+              exchangeName(exchanges, other.sellExchange),
+            )}
+          </p>
+          <Breakdown direction={other} pair={pair} />
+        </div>
+      )}
+    </div>
+  );
 }

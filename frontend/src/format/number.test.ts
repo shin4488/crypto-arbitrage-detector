@@ -5,6 +5,7 @@ import {
   fractionDigitsOf,
   shiftDecimalPoint,
   signOf,
+  subtractDecimals,
 } from './number';
 
 describe('formatDecimal', () => {
@@ -88,5 +89,22 @@ describe('fractionDigitsOf', () => {
     expect(fractionDigitsOf('77256')).toBe(0);
     expect(fractionDigitsOf('2407.10')).toBe(1);
     expect(fractionDigitsOf('abc')).toBe(0);
+  });
+});
+
+describe('subtractDecimals', () => {
+  it.each([
+    ['3.04', '-127.83', '130.87'],
+    ['1', '0.799', '0.201'],
+    ['0.1', '0.3', '-0.2'],
+    ['100', '100', '0'],
+    ['-8', '-162.52', '154.52'],
+    ['65436.84', '65433.8', '3.04'],
+  ])('%s − %s = %s', (a, b, want) => {
+    expect(subtractDecimals(a, b)).toBe(want);
+  });
+
+  it('数値でなければ NaN', () => {
+    expect(subtractDecimals('x', '1')).toBe('NaN');
   });
 });

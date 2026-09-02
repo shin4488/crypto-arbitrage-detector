@@ -1,8 +1,6 @@
-import { formatPercent } from '../format/number';
 import { useT } from '../i18n';
 import type { ExchangeInfo } from '../protocol/types';
 import type { ConnectionStatus } from '../state/reducer';
-import { Age } from './Age';
 
 interface HeaderProps {
   connection: ConnectionStatus;
@@ -11,6 +9,7 @@ interface HeaderProps {
   onTabNotificationChange: (enabled: boolean) => void;
 }
 
+/** タイトル、通知の切り替え、接続状態の1行 */
 export function Header({
   connection,
   exchanges,
@@ -18,52 +17,46 @@ export function Header({
   onTabNotificationChange,
 }: HeaderProps) {
   const t = useT();
-  const serverLabel = {
-    connecting: t.serverConnecting,
-    connected: t.serverConnected,
-    disconnected: t.serverDisconnected,
-  }[connection];
+  const status = connectionSentence(connection, exchanges, t);
 
   return (
-    <header className="header">
-      <div>
-        <h1>{t.appTitle}</h1>
-        <p className="muted">{t.appDescription}</p>
+    <header>
+      <div className="header">
+        <div>
+          <h1>{t.appTitle}</h1>
+          <p className="muted">{t.appDescription}</p>
+        </div>
+        <label title={t.tabTitleNotificationHelp}>
+          <input
+            type="checkbox"
+            checked={tabNotification}
+            onChange={(e) => onTabNotificationChange(e.target.checked)}
+          />{' '}
+          {t.tabTitleNotification}
+        </label>
       </div>
-      <ul className="status-list" aria-label="status">
-        <li>
-          <Dot ok={connection === 'connected'} />
-          <strong>{t.server}:</strong> {serverLabel}
-        </li>
-        {exchanges.map((ex) => (
-          <li key={ex.id}>
-            <Dot ok={ex.connected} />
-            <strong>{ex.name}:</strong>{' '}
-            {ex.connected ? t.exchangeConnected : t.exchangeDisconnected}{' '}
-            <span className="muted">
-              (<Age since={ex.since} />) · {t.takerFee}{' '}
-              {formatPercent(ex.takerFeeRate, 3).replace('+', '')}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <label title={t.tabTitleNotificationHelp}>
-        <input
-          type="checkbox"
-          checked={tabNotification}
-          onChange={(e) => onTabNotificationChange(e.target.checked)}
-        />{' '}
-        {t.tabTitleNotification}
-      </label>
+      <p className={`status ${status.ok ? 'pos' : 'warn'}`} role="status">
+        ● {status.text}
+      </p>
     </header>
   );
 }
 
-/** 接続状態を色で示す点。緑＝接続中、赤＝切断 */
-function Dot({ ok }: { ok: boolean }) {
-  return (
-    <span className={ok ? 'pos' : 'neg'} aria-hidden="true">
-      ●{' '}
-    </span>
-  );
+/** 接続の状態を「今どうなっているか」が分かる1文にまとめる */
+function connectionSentence(
+  connection: ConnectionStatus,
+  exchanges: ExchangeInfo[],
+  t: ReturnType<typeof useT>,
+): { ok: boolean; text: string } {
+  if (connection === 'connecting') {
+    return { ok: false, text: t.statusConnecting };
+  }
+  if (connection === 'disconnected') {
+    return { ok: false, text: t.statusServerDisconnected };
+  }
+  const down = exchanges.filter((ex) => !ex.connected).map((ex) => ex.name);
+  if (down.length > 0) {
+    return { ok: false, text: t.statusExchangeDisconnected(down.join('・')) };
+  }
+  return { ok: true, text: t.statusWatching(exchanges.map((ex) => ex.name).join('・')) };
 }

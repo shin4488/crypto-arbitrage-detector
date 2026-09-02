@@ -129,3 +129,24 @@ export function fractionDigitsOf(value: string): number {
   const parsed = parseDecimal(value);
   return parsed === null ? 0 : parsed.fracPart.replace(/0+$/, '').length;
 }
+
+/** 10進文字列どうしの引き算 a − b。浮動小数点を経由せず、桁をそろえて BigInt で計算する */
+export function subtractDecimals(a: string, b: string): string {
+  const pa = parseDecimal(a);
+  const pb = parseDecimal(b);
+  if (pa === null || pb === null) {
+    return 'NaN';
+  }
+  const scale = Math.max(pa.fracPart.length, pb.fracPart.length);
+  const toScaled = (p: ParsedDecimal) => {
+    const n = BigInt(p.intPart + p.fracPart.padEnd(scale, '0'));
+    return p.negative ? -n : n;
+  };
+  const diff = toScaled(pa) - toScaled(pb);
+  const negative = diff < 0n;
+  const digits = (negative ? -diff : diff).toString().padStart(scale + 1, '0');
+  const intPart = digits.slice(0, digits.length - scale);
+  const fracPart = digits.slice(digits.length - scale).replace(/0+$/, '');
+  const body = fracPart ? `${intPart}.${fracPart}` : intPart;
+  return negative ? `-${body}` : body;
+}

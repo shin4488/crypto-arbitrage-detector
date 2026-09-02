@@ -26,17 +26,14 @@ export function History({ history, exchanges }: HistoryProps) {
           <table>
             <thead>
               <tr>
-                <th scope="col">{t.colStarted}</th>
+                <th scope="col">{t.colTime}</th>
                 <th scope="col">{t.colPair}</th>
-                <th scope="col">{t.colDirection}</th>
-                <th scope="col" className="num">
-                  {t.colDuration}
-                </th>
+                <th scope="col">{t.colTrade}</th>
                 <th scope="col" className="num">
                   {t.colMaxNetProfit}
                 </th>
                 <th scope="col" className="num">
-                  {t.colQuantityAtMax}
+                  {t.colDuration}
                 </th>
               </tr>
             </thead>
@@ -55,18 +52,18 @@ export function History({ history, exchanges }: HistoryProps) {
                       {t.direction(
                         exchangeName(exchanges, ep.buyExchange),
                         exchangeName(exchanges, ep.sellExchange),
-                      )}
-                    </td>
-                    <td className="num">
-                      {ep.endedAt === null && <span className="badge small">{t.ongoing}</span>}{' '}
-                      <Duration from={ep.startedAt} to={ep.endedAt} />
+                      )}{' '}
+                      <span className="muted small">
+                        ({formatDecimal(ep.quantityAtMax, { maxFractionDigits: 8 })} {base})
+                      </span>
                     </td>
                     <td className="num pos">
                       {formatDecimal(ep.maxNetProfit, { maxFractionDigits: 4, signed: true })}{' '}
                       {quote}
                     </td>
                     <td className="num">
-                      {formatDecimal(ep.quantityAtMax, { maxFractionDigits: 8 })} {base}
+                      {ep.endedAt === null && <span className="badge small">{t.ongoing}</span>}{' '}
+                      <Duration from={ep.startedAt} to={ep.endedAt} />
                     </td>
                   </tr>
                 );

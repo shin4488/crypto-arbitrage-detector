@@ -31,7 +31,7 @@ describe('dictionaries', () => {
   });
 
   it('getDict は言語ごとの文言を返す', () => {
-    expect(getDict('ja').profitable).toBe('利益あり');
-    expect(getDict('en').profitable).toBe('Profitable');
+    expect(getDict('ja').badgeProfitable).toBe('利益あり');
+    expect(getDict('en').badgeProfitable).toBe('Profitable');
   });
 });

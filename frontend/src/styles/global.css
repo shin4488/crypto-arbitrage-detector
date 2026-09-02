@@ -79,14 +79,6 @@ h2 {
   gap: 8px 24px;
 }
 
-.status-list {
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 20px;
-}
-
 .boards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr));
@@ -158,6 +150,70 @@ tr.detail td {
   padding-top: 0;
   font-size: 0.85rem;
   color: GrayText;
+}
+
+.status {
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+/* 今、機会があるかどうかの1行。機会があるときだけ緑で目立たせる */
+.summary {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, CanvasText 6%, transparent);
+  color: GrayText;
+}
+
+.summary--profitable {
+  background: var(--pos-bg);
+  color: var(--pos);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.lead {
+  font-size: 1.05rem;
+}
+
+/* 価格差 − 手数料 = 手数料込み の内訳 */
+.breakdown {
+  width: auto;
+  margin-top: 6px;
+}
+
+.breakdown caption {
+  text-align: left;
+  caption-side: top;
+}
+
+.breakdown th {
+  font-weight: 400;
+  color: GrayText;
+  padding-left: 0;
+}
+
+.breakdown tr.total > * {
+  font-weight: 600;
+  border-top: 2px solid var(--line);
+  border-bottom: none;
+}
+
+details > summary {
+  cursor: pointer;
+  color: GrayText;
+  font-size: 0.85rem;
+}
+
+.details {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  display: grid;
+  gap: 6px;
+}
+
+.details ul {
+  padding-left: 1.2em;
 }
 
 /* 値が変わった瞬間だけ背景を光らせて、どこが動いたか分かるようにする */

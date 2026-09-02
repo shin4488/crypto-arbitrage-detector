@@ -1,12 +1,46 @@
 import { describe, expect, it } from 'vitest';
-import { exchangeFixture, pairFixture, profitableDirectionFixture } from '../test/fixtures';
-import { exchangeName, profitableDirection, titleSummary } from './selectors';
+import {
+  directionFixture,
+  exchangeFixture,
+  pairFixture,
+  profitableDirectionFixture,
+} from '../test/fixtures';
+import {
+  bestDirection,
+  exchangeName,
+  feePerUnit,
+  profitableDirection,
+  titleSummary,
+} from './selectors';
 
 describe('selectors', () => {
   it('profitableDirection は利益の出る方向を返す', () => {
     expect(profitableDirection(pairFixture())).toBeNull();
     const pair = pairFixture({ directions: [profitableDirectionFixture()] });
     expect(profitableDirection(pair)?.buyExchange).toBe('okx');
+  });
+
+  it('bestDirection は利益が無ければ手数料込みの損益がいちばん大きい方向を返す', () => {
+    // fixture: binance→okx は -127.83、okx→binance は -133.93
+    expect(bestDirection(pairFixture())?.buyExchange).toBe('binance');
+    expect(bestDirection(pairFixture({ directions: [] }))).toBeNull();
+  });
+
+  it('bestDirection は利益の出る方向を最優先する', () => {
+    const pair = pairFixture({
+      directions: [
+        directionFixture({ netSpread: '5' }),
+        profitableDirectionFixture({ netSpread: '0.1' }),
+      ],
+    });
+    expect(bestDirection(pair)?.profitable).toBe(true);
+  });
+
+  it('feePerUnit は価格差と手数料込み損益の差', () => {
+    expect(feePerUnit(directionFixture({ grossSpread: '3.04', netSpread: '-127.83' }))).toBe(
+      '130.87',
+    );
+    expect(feePerUnit(profitableDirectionFixture())).toBe('0.201');
   });
 
   it('titleSummary は機会のあるペアだけを短く要約する', () => {
