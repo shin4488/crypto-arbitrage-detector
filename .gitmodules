@@ -1,6 +1,0 @@
-[submodule "frontend"]
-	path = frontend
-	url = https://github.com/shin4488/crypto-arbitrage-detector-frontend
-[submodule "backend"]
-	path = backend
-	url = https://github.com/shin4488/crypto-arbitrage-detector-backend
