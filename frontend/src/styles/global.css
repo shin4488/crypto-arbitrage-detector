@@ -428,6 +428,11 @@ tr.detail td {
   gap: 8px 20px;
 }
 
+/* 式はカードの主役なので、横方向の中央に置く */
+.equation {
+  justify-content: center;
+}
+
 .figure {
   display: inline-grid;
   justify-items: center;
