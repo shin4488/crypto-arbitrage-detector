@@ -1,10 +1,14 @@
 /*
- * 配色は、地の色（Canvas / CanvasText / GrayText のシステムカラー）と、意味を持つ2色だけにする。
- *   緑: 利益が出ている（差引がプラス、「利益あり」の札、まとめの帯、履歴の利益）
- *   赤: 問題がある（接続が切れた、取引金額の入力が不正）
- * 買い・売り・選択中・変化の目印などは色ではなく、太さ・枠・地の濃淡で示す。
- * 色が多いとどこを見ればよいか分からなくなるため、「利益」と「問題」以外に色を使わない。
+ * 色は意味ごとに決め、同じ意味のものは同じ色にする。色を見れば何の値か分かるようにするため。
+ *   青: 買い（買う取引所の買値、「〜で買い」）と、選んでいるもの（表示中のチップ、取っ手、落とせる位置）
+ *   橙: 売り（売る取引所の売値、「〜で売り」）
+ *   緑: 利益（差引がプラス、「利益あり」の札、まとめの帯、履歴の利益、接続が正常の丸）
+ *   赤: 赤字・問題（差引がマイナス、接続が切れたときの丸、不正な入力）
+ *   黄: 注意（板で利益が出る量が足りない注記）
+ * 接続の状態の文字や「表示するペア」のラベルは地の文字色のまま。色は値と操作にだけ付ける。
+ * 値が変わった目印は色を持たせず地の濃淡にする（更新は秒間何十回もあり、色だとちらつくため）。
  * ライト／ダークは color-scheme で決まり、システムカラーと light-dark() がそれに追従する。
+ * light-dark() の左がライト、右がダークの値。どちらも地の色に対して読める濃さにする。
  * 数字は等幅で右揃えにして、桁を目で比べやすくする。
  */
 :root {
@@ -12,8 +16,13 @@
   --pos: light-dark(#137a3a, #5ad07f);
   --pos-bg: light-dark(#e6f6ec, #15301f);
   --neg: light-dark(#b42318, #ff7b70);
+  --buy: light-dark(#1d4ed8, #8ab4ff);
+  --buy-bg: light-dark(#dbeafe, #172a4d);
+  --sell: light-dark(#b45309, #ffc46b);
+  --sell-bg: light-dark(#fef3c7, #3f2f0a);
+  --warn: light-dark(#7a4b00, #ffd27a);
   --line: color-mix(in srgb, CanvasText 15%, transparent);
-  /* 薄い地。選択中のチップや有利な価格のセルに使う */
+  /* 薄い地。ボタンにマウスを乗せたときなどに使う */
   --tint: color-mix(in srgb, CanvasText 7%, transparent);
   --flash: color-mix(in srgb, CanvasText 14%, transparent);
 }
@@ -83,6 +92,22 @@ h2 {
   color: var(--pos);
 }
 
+.neg {
+  color: var(--neg);
+}
+
+.buy {
+  color: var(--buy);
+}
+
+.sell {
+  color: var(--sell);
+}
+
+.warn {
+  color: var(--warn);
+}
+
 .num {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -141,19 +166,13 @@ h2 {
   padding: 2px 6px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: none;
-  color: GrayText;
+  background: color-mix(in srgb, var(--buy) 12%, transparent);
+  color: var(--buy);
   font: inherit;
   font-size: 0.9rem;
   letter-spacing: -0.15em;
   line-height: 1;
   cursor: grab;
-}
-
-.drag-handle:hover,
-.drag-handle:focus-visible {
-  color: CanvasText;
-  background: var(--tint);
 }
 
 .drag-handle:active {
@@ -166,7 +185,7 @@ h2 {
 }
 
 .is-drop-target {
-  outline: 2px solid CanvasText;
+  outline: 2px solid var(--buy);
   outline-offset: 2px;
 }
 
@@ -213,13 +232,19 @@ h2 {
   overflow-x: auto;
 }
 
-/*
- * 有利な方向で使う2つの価格（買う取引所の買値、売る取引所の売値）のセル。
- * 薄い地と太字にして「買」「売」の札を添える。買いと売りを色で分けると画面の色が増えるので、札の文字で区別する
- */
+/* 有利な方向で使う2つの価格（買う取引所の買値、売る取引所の売値）のセル。買いは青、売りは橙で、「買」「売」の札を添える */
 td.pick {
   font-weight: 600;
-  background: var(--tint);
+}
+
+td.pick--buy {
+  background: var(--buy-bg);
+  color: var(--buy);
+}
+
+td.pick--sell {
+  background: var(--sell-bg);
+  color: var(--sell);
 }
 
 .pick__tag {
@@ -228,8 +253,15 @@ td.pick {
   padding: 0 6px;
   border-radius: 4px;
   font-size: 0.75rem;
-  background: CanvasText;
   color: Canvas;
+}
+
+td.pick--buy .pick__tag {
+  background: var(--buy);
+}
+
+td.pick--sell .pick__tag {
+  background: var(--sell);
 }
 
 table {
@@ -339,7 +371,7 @@ tbody th {
   gap: 16px;
 }
 
-/* 表示するペアの切り替え。選んでいるペアだけ枠を濃くして太字にする。チップはドラッグで並び替えられる */
+/* 表示するペアの切り替え。選んでいるペアだけ青で塗る（取っ手などと同じ「選んでいるもの」の青）。チップはドラッグで並び替えられる */
 .pair-filter {
   display: flex;
   flex-wrap: wrap;
@@ -355,7 +387,6 @@ tbody th {
 .pair-filter legend {
   float: left;
   padding: 0;
-  color: GrayText;
 }
 
 .chip {
@@ -370,9 +401,9 @@ tbody th {
 }
 
 .chip[aria-pressed="true"] {
-  border-color: CanvasText;
-  background: var(--tint);
-  color: CanvasText;
+  border-color: var(--buy);
+  background: var(--buy-bg);
+  color: var(--buy);
   font-weight: 600;
 }
 
@@ -496,7 +527,8 @@ tbody th {
   width: 1.4em;
   height: 1.4em;
   border-radius: 50%;
-  background: var(--line);
+  background: var(--buy);
+  color: Canvas;
   font-weight: 700;
   font-style: italic;
   font-family: Georgia, serif;

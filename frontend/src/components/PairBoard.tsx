@@ -140,7 +140,7 @@ interface VerdictProps {
   amount: string;
 }
 
-/** 主役の方向と、取引金額ぶんの「価格差 − 手数料 ＝ 差引」。差引がそのまま損益になる。色は利益が出たときの差引にだけ使う */
+/** 主役の方向と、取引金額ぶんの「価格差 − 手数料 ＝ 差引」。差引がそのまま損益になる（プラスは緑、マイナスは赤） */
 function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
   const t = useT();
   const plan = planForAmount(d, amount);
@@ -157,10 +157,9 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
     <div className="verdict">
       <p>
         <strong>
-          {t.direction(
-            exchangeName(exchanges, d.buyExchange),
-            exchangeName(exchanges, d.sellExchange),
-          )}
+          <span className="buy">{t.buyOn(exchangeName(exchanges, d.buyExchange))}</span>
+          {' → '}
+          <span className="sell">{t.sellOn(exchangeName(exchanges, d.sellExchange))}</span>
         </strong>
       </p>
       <p className="equation">
@@ -172,14 +171,13 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
           {formatDecimal(plan.fees, { maxFractionDigits: AMOUNT_DIGITS })}
         </Figure>
         <span className="op">=</span>
-        {/* 差引は利益が出るときだけ緑にする。利益が無いのは普通の状態なので色を付けない */}
-        <Figure label={t.rowNet} className={d.profitable ? 'pos' : undefined}>
+        <Figure label={t.rowNet} className={d.profitable ? 'pos' : 'neg'}>
           <Flash value={plan.net}>{money(plan.net)}</Flash>
         </Figure>
       </p>
       <p className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</p>
       {plan.capped && (
-        <p className="small">
+        <p className="warn small">
           {t.capped(quantity, pair.base, cost, pair.quote)}
           {d.depthExhausted && `。${t.depthExhausted}`}
         </p>
@@ -195,7 +193,7 @@ function Figure({
   children,
 }: {
   label: string;
-  className?: string | undefined;
+  className?: string;
   children: ReactNode;
 }) {
   return (
