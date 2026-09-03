@@ -7,6 +7,7 @@ GO_IMAGE      ?= golang:1.27-alpine
 LINT_IMAGE    ?= golangci/golangci-lint:v2.1.6
 MOD_CACHE     ?= crypto-arb-gomod
 BUILD_CACHE   ?= crypto-arb-gobuild
+LINT_CACHE    ?= crypto-arb-golangci
 
 # コンテナ内で動かす go コマンド。モジュールとビルドのキャッシュは名前付きボリュームに残し、2回目以降を速くする。
 DOCKER_GO = docker run --rm -t \
@@ -17,6 +18,16 @@ DOCKER_GO = docker run --rm -t \
 	$(GO_IMAGE)
 GO ?= $(DOCKER_GO) go
 
+# コンテナ内で動かす golangci-lint。整形（fmt）と静的検査（run）の両方に使い、どちらの設定も .golangci.yml にまとめる。
+# 検査結果のキャッシュも名前付きボリュームに残すと、2回目以降は数秒で終わる。
+DOCKER_LINT = docker run --rm \
+	-v "$(CURDIR)":/src -w /src \
+	-v $(MOD_CACHE):/go/pkg/mod \
+	-v $(BUILD_CACHE):/root/.cache/go-build \
+	-v $(LINT_CACHE):/root/.cache/golangci-lint \
+	$(LINT_IMAGE)
+GOLANGCI_LINT ?= $(DOCKER_LINT) golangci-lint
+
 .PHONY: help tidy fmt vet test test-race cover lint build run clean
 
 help: ## タスク一覧を表示
@@ -25,8 +36,8 @@ help: ## タスク一覧を表示
 tidy: ## go.mod / go.sum を整理
 	$(GO) mod tidy
 
-fmt: ## コード整形（gofmt）
-	$(GO) fmt ./...
+fmt: ## コード整形（gofmt + goimports。.golangci.yml の formatters に従う）
+	$(GOLANGCI_LINT) fmt ./...
 
 vet: ## 静的検査（go vet）
 	$(GO) vet ./...
@@ -40,8 +51,8 @@ test-race: ## データ競合の検出付きテスト（CGO が必要なので g
 cover: ## カバレッジ計測
 	$(GO) test -coverprofile=coverage.out ./... && $(GO) tool cover -func=coverage.out | tail -1
 
-lint: ## golangci-lint 実行
-	docker run --rm -t -v "$(CURDIR)":/src -w /src -v $(MOD_CACHE):/go/pkg/mod $(LINT_IMAGE) golangci-lint run ./...
+lint: ## 静的検査（golangci-lint。整形の乱れも指摘する）
+	$(GOLANGCI_LINT) run ./...
 
 build: ## バイナリをビルド（bin/server）
 	$(GO) build -o bin/server ./cmd/server
