@@ -172,7 +172,7 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
 
   return (
     <div className="verdict">
-      <p>
+      <p className="direction">
         <strong>
           <span className="buy">{t.buyOn(exchangeName(exchanges, d.buyExchange))}</span>
           {' → '}
