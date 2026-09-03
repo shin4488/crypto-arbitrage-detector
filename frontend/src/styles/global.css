@@ -433,18 +433,18 @@ tr.detail td {
 }
 
 .info__popover > strong,
-.info__popover > span,
-.info__popover > ul {
+.info__popover > span {
   display: block;
   margin: 0 0 6px;
 }
 
-.info__popover ul {
-  padding-left: 1.2em;
+.info__item {
+  padding-left: 1em;
+  text-indent: -1em;
 }
 
-.info__popover li {
-  display: list-item;
+.info__item::before {
+  content: "・";
 }
 
 .info:hover .info__popover,

@@ -17,7 +17,7 @@ export function FeeNote({ exchanges }: FeeNoteProps) {
     .join('・');
 
   return (
-    <p className="muted small">
+    <div className="muted small">
       {t.feeNote(fees)}{' '}
       <span className="info">
         <button
@@ -32,27 +32,25 @@ export function FeeNote({ exchanges }: FeeNoteProps) {
         <span className={`info__popover ${open ? 'is-open' : ''}`} role="tooltip">
           <strong>{t.feeInfoTitle}</strong>
           <span>{t.feeInfoIntro}</span>
-          <ul>
-            {exchanges.map((ex) => {
-              const info = EXCHANGE_FEE_INFO[ex.id];
-              if (!info) {
-                return null;
-              }
-              return (
-                <li key={ex.id}>
-                  {t.feeInfoRate(ex.name, t.feeTier[info.tier], info.maker, info.taker)}{' '}
-                  <a href={info.url} target="_blank" rel="noopener noreferrer">
-                    {t.feeInfoLink}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
+          {exchanges.map((ex) => {
+            const info = EXCHANGE_FEE_INFO[ex.id];
+            if (!info) {
+              return null;
+            }
+            return (
+              <span key={ex.id} className="info__item">
+                {t.feeInfoRate(ex.name, t.feeTier[info.tier], info.maker, info.taker)}{' '}
+                <a href={info.url} target="_blank" rel="noopener noreferrer">
+                  {t.feeInfoLink}
+                </a>
+              </span>
+            );
+          })}
           <span>{t.feeInfoTier}</span>
           <span>{t.feeInfoTaker}</span>
         </span>
       </span>{' '}
       · {t.theoreticalNote}
-    </p>
+    </div>
   );
 }
