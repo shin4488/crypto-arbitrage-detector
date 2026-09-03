@@ -27,12 +27,12 @@ services:
     cap_drop:
       - ALL
 
-  # 開発用: バックエンドをソースから go run で動かす
+  # 開発用: バックエンドをソースから動かし、.go が変わったら自動で再起動する（scripts/dev.sh）
   backend-dev:
     profiles: [dev]
     image: golang:1.24-alpine@sha256:8bee1901f1e530bfb4a7850aa7a479d17ae3a18beb6e09064ed54cfd245b7191
     working_dir: /src
-    command: go run ./cmd/server
+    command: sh scripts/dev.sh
     ports:
       - "8080:8080"
     environment:
