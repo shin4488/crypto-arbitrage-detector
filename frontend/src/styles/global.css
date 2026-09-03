@@ -1,11 +1,11 @@
 /*
  * 色は意味ごとに決め、同じ意味のものは同じ色にする。色を見れば何の値か分かるようにするため。
- *   青: 買い（買う取引所の買値、「〜で買い」）と、選んでいるもの（表示中のチップ、取っ手、落とせる位置）
+ *   青: 買い（買う取引所の買値、「〜で買い」）と、選んでいるもの（表示中のチップ、落とせる位置）
  *   橙: 売り（売る取引所の売値、「〜で売り」）
  *   緑: 利益（差引がプラス、「利益あり」の札、まとめの帯、履歴の利益、接続が正常の丸）
  *   赤: 赤字・問題（差引がマイナス、接続が切れたときの丸、不正な入力）
  *   黄: 注意（板で利益が出る量が足りない注記）
- * 接続の状態の文字や「表示するペア」のラベルは地の文字色のまま。色は値と操作にだけ付ける。
+ * 接続の状態の文字や「表示するペア」のラベル、カードの取っ手は地の文字色のまま。色は値と操作にだけ付ける。
  * 値が変わった目印は色を持たせず地の濃淡にする（更新は秒間何十回もあり、色だとちらつくため）。
  * ライト／ダークは color-scheme で決まり、システムカラーと light-dark() がそれに追従する。
  * light-dark() の左がライト、右がダークの値。どちらも地の色に対して読める濃さにする。
@@ -161,17 +161,20 @@ h2 {
   margin-right: auto;
 }
 
-/* ドラッグ用の取っ手。ここをつかむとカードを動かせる。見つけやすいよう、青い枠と地の中に6つの点を描く */
+/*
+ * ドラッグ用の取っ手。ここをつかむとカードを動かせる。
+ * 隣のペア名と同じ地の文字色で6つの点を描き、枠と薄い地を付けてボタンだと分かるようにする
+ */
 .drag-handle {
   display: inline-grid;
   place-items: center;
   width: 2em;
   height: 2em;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--buy) 55%, transparent);
+  border: 1px solid color-mix(in srgb, CanvasText 40%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--buy) 16%, transparent);
-  color: var(--buy);
+  background: color-mix(in srgb, CanvasText 10%, transparent);
+  color: CanvasText;
   cursor: grab;
 }
 
@@ -181,8 +184,8 @@ h2 {
 
 .drag-handle:hover,
 .drag-handle:focus-visible {
-  border-color: var(--buy);
-  background: color-mix(in srgb, var(--buy) 30%, transparent);
+  border-color: CanvasText;
+  background: color-mix(in srgb, CanvasText 20%, transparent);
 }
 
 .drag-handle:active {
