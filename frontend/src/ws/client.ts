@@ -19,6 +19,9 @@ export interface WsClient {
 /**
  * ブラウザ標準の WebSocket に自動再接続を足した薄いラッパー。
  * 切断されるたびに待ち時間を倍にしながら（上限あり、±20% の揺らぎ付き）つなぎ直す。
+ * close() は接続の確立を待ってから閉じる。確立前に閉じるとブラウザが警告を出し、Vite の中継も
+ * 途中で切られた接続のエラーを残すため（React の StrictMode は開発時に効果を一度余分に実行するので、
+ * 画面を開くたびにこれが起きる）。
  */
 export function createWsClient(options: WsClientOptions): WsClient {
   const minBackoff = options.minBackoffMs ?? 1000;
@@ -81,10 +84,17 @@ export function createWsClient(options: WsClientOptions): WsClient {
       }
       const ws = socket;
       socket = null;
-      if (ws) {
-        ws.onclose = null;
-        ws.close();
+      if (!ws) {
+        return;
       }
+      ws.onmessage = null;
+      ws.onclose = null;
+      if (ws.readyState === Impl.CONNECTING) {
+        // 確立してから閉じる。確立に失敗した場合はブラウザが close を発火して終わる（onclose は外してあるので再接続しない）
+        ws.onopen = () => ws.close();
+        return;
+      }
+      ws.close();
     },
   };
 }

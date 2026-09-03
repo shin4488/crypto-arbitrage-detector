@@ -95,6 +95,9 @@ describe('useArbitrageFeed', () => {
     const { unmount } = render();
     const ws = FakeWebSocket.latest();
     unmount();
+    // 確立前に閉じるとブラウザが警告を出すので、確立を待ってから閉じる
+    expect(ws.closeCalled).toBe(false);
+    ws.simulateOpen();
     expect(ws.closeCalled).toBe(true);
   });
 });

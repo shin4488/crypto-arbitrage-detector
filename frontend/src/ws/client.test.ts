@@ -91,6 +91,32 @@ describe('createWsClient', () => {
     expect(onStatus).toHaveBeenLastCalledWith('connected');
   });
 
+  it('接続の確立前に close すると、確立を待ってから閉じる（ブラウザの警告を出さない）', () => {
+    const { client, onStatus } = setup();
+    const ws = FakeWebSocket.latest();
+    client.close();
+    // まだ CONNECTING なので、この時点では閉じない
+    expect(ws.closeCalled).toBe(false);
+    ws.simulateOpen();
+    expect(ws.closeCalled).toBe(true);
+    // 確立しても「接続中」の通知はしないし、再接続もしない
+    expect(onStatus).toHaveBeenLastCalledWith('connecting');
+    vi.advanceTimersByTime(10_000);
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
+  it('確立前に close した接続が失敗しても、通知も再接続もしない', () => {
+    const { client, onStatus, onMessage } = setup();
+    const ws = FakeWebSocket.latest();
+    client.close();
+    ws.simulateMessage('{"type":"init"}');
+    ws.simulateClose();
+    expect(onMessage).not.toHaveBeenCalled();
+    expect(onStatus).toHaveBeenLastCalledWith('connecting');
+    vi.advanceTimersByTime(10_000);
+    expect(FakeWebSocket.instances).toHaveLength(1);
+  });
+
   it('再接続待ちの間に close すると再接続を取り消す', () => {
     const { client } = setup();
     FakeWebSocket.latest().simulateClose();
