@@ -158,12 +158,12 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	state := h.state.Snapshot()
 	c.initSeq = state.Seq
 	if err := c.write(wire.NewInitMessage(state)); err != nil {
+		// 閉じても下のゴルーチンは起動する。register で数えた分を必ず Done するため（すぐに抜ける）。
 		c.close(fmt.Errorf("初期状態の送信に失敗: %w", err))
-		return
+	} else {
+		h.log.Info("クライアント接続", "remote", r.RemoteAddr, "clients", h.ClientCount())
 	}
-	h.log.Info("クライアント接続", "remote", r.RemoteAddr, "clients", h.ClientCount())
 
-	h.wg.Add(2)
 	go func() {
 		defer h.wg.Done()
 		c.writeLoop()
@@ -174,6 +174,9 @@ func (h *Hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
+// register はクライアントを登録し、送受信ゴルーチン2本分を wg に加える。
+// wg.Add を closed の判定と同じロックの下で行うのは、Shutdown の wg.Wait と同時に Add が走る
+// （WaitGroup の規則に反し、データ競合になる）のを防ぐため。Shutdown は closed を立ててから Wait する。
 func (h *Hub) register(c *client) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -181,6 +184,7 @@ func (h *Hub) register(c *client) bool {
 		return false
 	}
 	h.clients[c] = struct{}{}
+	h.wg.Add(2)
 	return true
 }
 
