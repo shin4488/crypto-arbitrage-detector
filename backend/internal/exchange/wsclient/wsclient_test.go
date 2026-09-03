@@ -192,6 +192,11 @@ func TestRun_ReconnectsAfterServerCloses(t *testing.T) {
 	statuses.waitFor(t, []bool{true})
 	srv.closeAll()
 	statuses.waitFor(t, []bool{true, false, true})
+	// クライアント側が「接続した」と判断してから、サーバー側のハンドラが accepted を数えるまでにわずかな遅れがある
+	deadline := time.Now().Add(2 * time.Second)
+	for srv.accepted.Load() < 2 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
 	if srv.accepted.Load() < 2 {
 		t.Fatalf("再接続されているはず: %d", srv.accepted.Load())
 	}
