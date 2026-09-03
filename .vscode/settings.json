@@ -21,5 +21,8 @@
     "**/dist": true,
     "**/build": true,
     "**/.git": true
+  },
+  "[javascript][typescript][typescriptreact][json][jsonc][css]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
 }

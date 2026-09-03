@@ -6,6 +6,10 @@
 # 開発用サービスはソースをマウントして動かすので、Go や Node.js をローカルに入れなくてよい。
 # 依存やビルドのキャッシュは名前付きボリュームに残し、2回目以降の起動を速くする。
 
+# プロジェクト名を固定し、git worktree などディレクトリ名が違う場所から動かしても
+# 同じ名前のボリューム（依存やビルドのキャッシュ）を使い回せるようにする
+name: crypto-arbitrage-detector
+
 services:
   # 本番相当。フロントエンドを埋め込んだ Go バイナリ1つだけのコンテナ
   app:
@@ -54,6 +58,9 @@ services:
     environment:
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
       COREPACK_HOME: /cache/corepack
+      # Yarn 4 は既定でホームディレクトリ配下のグローバルキャッシュを使うため、
+      # ボリュームに置いた YARN_CACHE_FOLDER を使わせるにはグローバルキャッシュを切る
+      YARN_ENABLE_GLOBAL_CACHE: "false"
       YARN_CACHE_FOLDER: /cache/yarn
       DEV_PROXY_TARGET: http://backend-dev:8080
       # Docker Desktop のバインドマウントではファイル変更の通知が届かないため、ポーリングで検知する

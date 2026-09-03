@@ -3,3 +3,5 @@
 .env.*
 !.env.example
 *.log
+# Claude Code の個人用設定（権限の許可リストなど）
+.claude/settings.local.json
