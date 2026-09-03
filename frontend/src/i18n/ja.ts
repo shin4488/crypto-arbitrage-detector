@@ -23,7 +23,7 @@ export const ja = {
   rowFees: '手数料',
   rowNet: '差引',
   tradeAmount: '取引金額',
-  tradeAmountHelp: 'この金額ぶんの売買として、下の価格差・手数料・差引を計算します',
+  tradeAmountHelp: 'この金額相当の売買として、価格差・手数料・差引を計算します',
   forAmount: (quantity: string, base: string, cost: string, quote: string) =>
     `${quantity} ${base} ≈ ${cost} ${quote}`,
   capped: (quantity: string, base: string, cost: string, quote: string) =>
