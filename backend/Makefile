@@ -3,7 +3,7 @@
 # Go はローカルに入れない前提なので、既定では Docker コンテナの中で go コマンドを動かす。
 # ローカルに Go がある環境や CI では `make test GO=go` のように上書きできる。
 
-GO_IMAGE      ?= golang:1.24-alpine
+GO_IMAGE      ?= golang:1.27-alpine
 LINT_IMAGE    ?= golangci/golangci-lint:v2.1.6
 MOD_CACHE     ?= crypto-arb-gomod
 BUILD_CACHE   ?= crypto-arb-gobuild
@@ -34,7 +34,7 @@ vet: ## 静的検査（go vet）
 test: ## テスト実行
 	$(GO) test ./...
 
-test-race: ## データ競合の検出付きテスト（CGO が必要なので golang:1.24 などの glibc イメージかローカルの Go で実行する）
+test-race: ## データ競合の検出付きテスト（CGO が必要なので golang:1.27 などの glibc イメージかローカルの Go で実行する）
 	$(GO) test -race ./...
 
 cover: ## カバレッジ計測
