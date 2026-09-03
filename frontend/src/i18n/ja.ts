@@ -28,8 +28,7 @@ export const ja = {
   depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
 
   // カードの操作
-  moveUp: '上へ',
-  moveDown: '下へ',
+  dragToReorder: 'ドラッグして並び替え（↑↓キーでも動かせます）',
   collapse: '折りたたむ',
   expand: '展開する',
 

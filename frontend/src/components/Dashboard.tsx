@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { type Lang, useT } from '../i18n';
 import { isCollapsed, type LayoutAction, orderedPairs, type PairLayout } from '../state/layout';
 import type { FeedState } from '../state/reducer';
@@ -37,6 +38,25 @@ export function Dashboard({
 }: DashboardProps) {
   const t = useT();
   const ordered = orderedPairs(state.pairs, layout);
+  // ドラッグ＆ドロップの途中経過。落とした時点で layout に反映する
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const handleDragStart = useCallback((pair: string) => setDragging(pair), []);
+  const handleDragOver = useCallback((pair: string) => setDropTarget(pair), []);
+  const handleDragEnd = useCallback(() => {
+    setDragging(null);
+    setDropTarget(null);
+  }, []);
+  const handleDrop = useCallback(
+    (target: string) => {
+      if (dragging !== null && dragging !== target) {
+        onLayoutAction(dragging, { type: 'moveTo', target });
+      }
+      setDragging(null);
+      setDropTarget(null);
+    },
+    [dragging, onLayoutAction],
+  );
   // 取引金額の単位。通貨ペアはすべて同じ Quote 通貨（USDT）を前提に、先頭のペアから取る
   const quote = state.pairs[0]?.quote ?? 'USDT';
 
@@ -53,16 +73,20 @@ export function Dashboard({
           <Summary pairs={state.pairs} exchanges={state.exchanges} amount={amount} />
           <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
           <main className="boards">
-            {ordered.map((pair, i) => (
+            {ordered.map((pair) => (
               <PairBoard
                 key={pair.pair}
                 pair={pair}
                 exchanges={state.exchanges}
                 amount={amount}
                 collapsed={isCollapsed(layout, pair.pair)}
-                canMoveUp={i > 0}
-                canMoveDown={i < ordered.length - 1}
+                dragging={dragging === pair.pair}
+                dropTarget={dropTarget === pair.pair && dragging !== pair.pair}
                 onAction={onLayoutAction}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
               />
             ))}
           </main>

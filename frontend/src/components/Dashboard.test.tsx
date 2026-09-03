@@ -240,21 +240,25 @@ describe('Dashboard', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
   });
-  it('カードの並び替え・折りたたみのボタンで操作を通知する', () => {
+  it('取っ手のドラッグ＆ドロップで並び替え、キーボードの ↑↓ でも動かせる', () => {
     const { onLayoutAction } = renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     const eth = screen.getByRole('region', { name: 'ETH/USDT' });
-    // 先頭は上へ動かせず、末尾は下へ動かせない
-    expect((within(btc).getByRole('button', { name: '上へ' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
-    expect((within(eth).getByRole('button', { name: '下へ' }) as HTMLButtonElement).disabled).toBe(
-      true,
-    );
-    fireEvent.click(within(btc).getByRole('button', { name: '下へ' }));
-    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', 'moveDown');
+    const handle = within(btc).getByRole('button', { name: /ドラッグして並び替え/ });
+    // ドラッグして ETH の位置に落とす
+    fireEvent.dragStart(btc);
+    fireEvent.dragOver(eth);
+    expect(eth.className).toContain('is-drop-target');
+    fireEvent.drop(eth);
+    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'moveTo', target: 'ETH/USDT' });
+    // キーボード
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'moveBy', delta: 1 });
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'moveBy', delta: -1 });
+    // 折りたたみ
     fireEvent.click(within(btc).getByRole('button', { name: '折りたたむ' }));
-    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', 'toggleCollapsed');
+    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'toggleCollapsed' });
   });
 
   it('保存した並び順で表示し、折りたたんだカードは見出しだけにする', () => {

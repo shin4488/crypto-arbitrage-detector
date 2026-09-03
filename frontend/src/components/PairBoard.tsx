@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from 'react';
+import { type DragEvent, type KeyboardEvent, memo, type ReactNode, useState } from 'react';
 import { formatDecimal, multiplyDecimals, quantityFractionDigits } from '../format/number';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
@@ -14,9 +14,15 @@ interface PairBoardProps {
   /** 取引金額（Quote 通貨建て、正の数） */
   amount: string;
   collapsed: boolean;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
+  /** このカードをドラッグ中 */
+  dragging: boolean;
+  /** ドラッグ中のカードをここに落とせる位置として示す */
+  dropTarget: boolean;
   onAction: (pair: string, action: LayoutAction) => void;
+  onDragStart: (pair: string) => void;
+  onDragOver: (pair: string) => void;
+  onDrop: (pair: string) => void;
+  onDragEnd: () => void;
 }
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
@@ -25,8 +31,8 @@ const PRICE_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの枠。上から「今の状態 → 方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式 → 各取引所の買値・売値」の順。
- * 板に並ぶ数量や逆方向の値は売買の判断に使わないので出さない。
+ * 1つの通貨ペアの枠。左に「方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式」、右に「各取引所の買値・売値」。
+ * 左上の取っ手をつかんでドラッグすると並び替えられる（取っ手にフォーカスして ↑↓ でも動かせる）。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
 export const PairBoard = memo(function PairBoard({
@@ -34,9 +40,13 @@ export const PairBoard = memo(function PairBoard({
   exchanges,
   amount,
   collapsed,
-  canMoveUp,
-  canMoveDown,
+  dragging,
+  dropTarget,
   onAction,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: PairBoardProps) {
   const t = useT();
   const best = bestDirection(pair);
@@ -46,58 +56,86 @@ export const PairBoard = memo(function PairBoard({
     : hasQuotes
       ? { className: 'muted', text: t.badgeNone }
       : { className: 'muted', text: t.badgeWaiting };
+  // 取っ手を押している間だけカードをドラッグ可能にする（本文の選択やリンク操作を邪魔しないため）
+  const [armed, setArmed] = useState(false);
+
+  const handleKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      onAction(pair.pair, { type: 'moveBy', delta: e.key === 'ArrowUp' ? -1 : 1 });
+    }
+  };
+  // dataTransfer はブラウザでは必ずあるが、テスト環境（jsdom）では無いので存在を確かめてから使う
+  const handleDragStart = (e: DragEvent<HTMLElement>) => {
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', pair.pair);
+    }
+    onDragStart(pair.pair);
+  };
+  const handleDragOver = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault(); // preventDefault しないと drop が発火しない
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    onDragOver(pair.pair);
+  };
+  const handleDrop = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    onDrop(pair.pair);
+  };
 
   return (
     <section
-      className={`card ${best?.profitable ? 'card--profitable' : ''}`}
+      className={`card ${best?.profitable ? 'card--profitable' : ''} ${dragging ? 'is-dragging' : ''} ${dropTarget ? 'is-drop-target' : ''}`}
       aria-label={pair.pair}
+      draggable={armed}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragEnd={() => {
+        setArmed(false);
+        onDragEnd();
+      }}
     >
       <header className="card__header">
+        <button
+          type="button"
+          className="drag-handle"
+          aria-label={t.dragToReorder}
+          title={t.dragToReorder}
+          onMouseDown={() => setArmed(true)}
+          onMouseUp={() => setArmed(false)}
+          onKeyDown={handleKey}
+        >
+          ⋮⋮
+        </button>
         <h2>{pair.pair}</h2>
         <span className={badge.className}>{badge.text}</span>
-        <span className="card__tools">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={t.moveUp}
-            title={t.moveUp}
-            disabled={!canMoveUp}
-            onClick={() => onAction(pair.pair, 'moveUp')}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={t.moveDown}
-            title={t.moveDown}
-            disabled={!canMoveDown}
-            onClick={() => onAction(pair.pair, 'moveDown')}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label={collapsed ? t.expand : t.collapse}
-            title={collapsed ? t.expand : t.collapse}
-            aria-expanded={!collapsed}
-            onClick={() => onAction(pair.pair, 'toggleCollapsed')}
-          >
-            {collapsed ? '+' : '−'}
-          </button>
-        </span>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={collapsed ? t.expand : t.collapse}
+          title={collapsed ? t.expand : t.collapse}
+          aria-expanded={!collapsed}
+          onClick={() => onAction(pair.pair, { type: 'toggleCollapsed' })}
+        >
+          {collapsed ? '▸' : '▾'}
+        </button>
       </header>
 
-      {collapsed ? null : !hasQuotes ? (
-        <p className="muted">{t.waitingForData}</p>
-      ) : best === null ? (
-        <p className="muted">{t.notEvaluable}</p>
-      ) : (
-        <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
+      {!collapsed && (
+        <div className="card__body">
+          {!hasQuotes ? (
+            <p className="muted">{t.waitingForData}</p>
+          ) : best === null ? (
+            <p className="muted">{t.notEvaluable}</p>
+          ) : (
+            <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
+          )}
+          {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
+        </div>
       )}
-
-      {!collapsed && hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
     </section>
   );
 });
@@ -143,8 +181,8 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
         <Figure label={t.rowNet} className={d.profitable ? 'pos' : 'neg'}>
           <Flash value={plan.net}>{money(plan.net)}</Flash>
         </Figure>
-        <span className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</span>
       </p>
+      <p className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</p>
       {plan.capped && (
         <p className="warn small">
           {t.capped(quantity, pair.base, cost, pair.quote)}

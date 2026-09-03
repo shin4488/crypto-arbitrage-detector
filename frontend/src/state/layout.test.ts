@@ -16,23 +16,40 @@ describe('orderedPairs', () => {
 });
 
 describe('applyLayoutAction', () => {
-  it('上下に動かすと隣と入れ替わる', () => {
-    const down = applyLayoutAction(emptyLayout, pairs, 'BTC', 'moveDown');
+  it('moveBy は隣と入れ替え、端では動かない', () => {
+    const down = applyLayoutAction(emptyLayout, pairs, 'BTC', { type: 'moveBy', delta: 1 });
     expect(ids(orderedPairs(pairs, down))).toEqual(['ETH', 'BTC', 'XRP', 'DOGE']);
-    const up = applyLayoutAction(down, pairs, 'DOGE', 'moveUp');
-    expect(ids(orderedPairs(pairs, up))).toEqual(['ETH', 'BTC', 'DOGE', 'XRP']);
+    expect(applyLayoutAction(emptyLayout, pairs, 'BTC', { type: 'moveBy', delta: -1 })).toBe(
+      emptyLayout,
+    );
+    expect(applyLayoutAction(emptyLayout, pairs, 'DOGE', { type: 'moveBy', delta: 1 })).toBe(
+      emptyLayout,
+    );
   });
 
-  it('端では動かず、知らないペアも無視する', () => {
-    expect(applyLayoutAction(emptyLayout, pairs, 'BTC', 'moveUp')).toBe(emptyLayout);
-    expect(applyLayoutAction(emptyLayout, pairs, 'DOGE', 'moveDown')).toBe(emptyLayout);
-    expect(applyLayoutAction(emptyLayout, pairs, 'SOL', 'moveDown')).toBe(emptyLayout);
+  it('moveTo は下へ動かせば目標の後ろ、上へ動かせば目標の前に入る', () => {
+    const down = applyLayoutAction(emptyLayout, pairs, 'BTC', { type: 'moveTo', target: 'XRP' });
+    expect(ids(orderedPairs(pairs, down))).toEqual(['ETH', 'XRP', 'BTC', 'DOGE']);
+    const up = applyLayoutAction(emptyLayout, pairs, 'DOGE', { type: 'moveTo', target: 'ETH' });
+    expect(ids(orderedPairs(pairs, up))).toEqual(['BTC', 'DOGE', 'ETH', 'XRP']);
+  });
+
+  it('moveTo は同じ位置や知らないペアでは何もしない', () => {
+    expect(applyLayoutAction(emptyLayout, pairs, 'BTC', { type: 'moveTo', target: 'BTC' })).toBe(
+      emptyLayout,
+    );
+    expect(applyLayoutAction(emptyLayout, pairs, 'SOL', { type: 'moveTo', target: 'BTC' })).toBe(
+      emptyLayout,
+    );
+    expect(applyLayoutAction(emptyLayout, pairs, 'BTC', { type: 'moveTo', target: 'SOL' })).toBe(
+      emptyLayout,
+    );
   });
 
   it('折りたたみの切り替え', () => {
-    const a = applyLayoutAction(emptyLayout, pairs, 'ETH', 'toggleCollapsed');
+    const a = applyLayoutAction(emptyLayout, pairs, 'ETH', { type: 'toggleCollapsed' });
     expect(isCollapsed(a, 'ETH')).toBe(true);
-    const b = applyLayoutAction(a, pairs, 'ETH', 'toggleCollapsed');
+    const b = applyLayoutAction(a, pairs, 'ETH', { type: 'toggleCollapsed' });
     expect(isCollapsed(b, 'ETH')).toBe(false);
   });
 });

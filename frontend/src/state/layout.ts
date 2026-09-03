@@ -8,7 +8,12 @@ export interface PairLayout {
   collapsed: string[];
 }
 
-export type LayoutAction = 'moveUp' | 'moveDown' | 'toggleCollapsed';
+export type LayoutAction =
+  | { type: 'toggleCollapsed' }
+  /** 隣と入れ替える（キーボード操作用） */
+  | { type: 'moveBy'; delta: -1 | 1 }
+  /** 指定したペアの位置へ動かす（ドラッグ＆ドロップ用） */
+  | { type: 'moveTo'; target: string };
 
 export const emptyLayout: PairLayout = { order: [], collapsed: [] };
 
@@ -32,7 +37,7 @@ export function applyLayoutAction(
   pair: string,
   action: LayoutAction,
 ): PairLayout {
-  switch (action) {
+  switch (action.type) {
     case 'toggleCollapsed':
       return {
         ...layout,
@@ -40,16 +45,27 @@ export function applyLayoutAction(
           ? layout.collapsed.filter((id) => id !== pair)
           : [...layout.collapsed, pair],
       };
-    case 'moveUp':
-    case 'moveDown': {
+    case 'moveBy': {
       const ids = orderedPairs(pairs, layout).map((p) => p.pair);
       const from = ids.indexOf(pair);
-      const to = from + (action === 'moveUp' ? -1 : 1);
+      const to = from + action.delta;
       if (from === -1 || to < 0 || to >= ids.length) {
         return layout;
       }
       const next = ids.slice();
       [next[from], next[to]] = [next[to] as string, next[from] as string];
+      return { ...layout, order: next };
+    }
+    case 'moveTo': {
+      const ids = orderedPairs(pairs, layout).map((p) => p.pair);
+      const from = ids.indexOf(pair);
+      const to = ids.indexOf(action.target);
+      if (from === -1 || to === -1 || from === to) {
+        return layout;
+      }
+      // 動かすものを抜いてから目標の位置に差し込む。上へ動かせば目標の前、下へ動かせば目標の後ろに入る
+      const next = ids.filter((id) => id !== pair);
+      next.splice(to, 0, pair);
       return { ...layout, order: next };
     }
   }

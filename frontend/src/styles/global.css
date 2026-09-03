@@ -105,9 +105,21 @@ h2 {
 
 .boards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 470px), 1fr));
-  gap: 20px;
-  align-items: start; /* 折りたたんだカードが隣の高さまで伸びて空箱に見えないようにする */
+  gap: 16px;
+}
+
+/* カードの中は左に方向と式、右に買値・売値の表。狭い画面では縦に並ぶ */
+.card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 32px;
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .card__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .card {
@@ -136,11 +148,31 @@ h2 {
   margin-right: auto;
 }
 
-/* カードの操作（並び替え・折りたたみ・非表示）。普段は目立たせず、触れると浮き上がる */
-.card__tools {
-  display: inline-flex;
-  gap: 2px;
-  margin-left: 8px;
+/* ドラッグ用の取っ手。ここをつかむとカードを動かせる */
+.drag-handle {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--buy) 12%, transparent);
+  color: var(--buy);
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: -0.15em;
+  line-height: 1;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.card.is-dragging {
+  opacity: 0.5;
+}
+
+.card.is-drop-target {
+  outline: 2px solid var(--buy);
+  outline-offset: 2px;
 }
 
 .icon-button {
