@@ -8,38 +8,35 @@ interface SummaryProps {
   exchanges: ExchangeInfo[];
 }
 
-/** 「今、利益の出る機会があるか」を画面の最初に1行で示す */
+/** 「今、利益の出る機会があるか」を画面の最初に示す。機会があればペア・方向・利益を1行ずつ */
 export function Summary({ pairs, exchanges }: SummaryProps) {
   const t = useT();
-  const lines = pairs.flatMap((pair) => {
+  const opportunities = pairs.flatMap((pair) => {
     const d = profitableDirection(pair);
-    if (!d) {
-      return [];
-    }
-    const profit = `${formatDecimal(d.netProfit, { maxFractionDigits: 4, signed: true })} ${pair.quote}`;
-    return [
-      {
-        key: pair.pair,
-        text: t.summaryProfitable(
-          pair.pair,
-          exchangeName(exchanges, d.buyExchange),
-          exchangeName(exchanges, d.sellExchange),
-          profit,
-        ),
-      },
-    ];
+    return d ? [{ pair, direction: d }] : [];
   });
 
-  return (
-    <section
-      className={`summary ${lines.length > 0 ? 'summary--profitable' : ''}`}
-      aria-live="polite"
-    >
-      {lines.length === 0 ? (
+  if (opportunities.length === 0) {
+    return (
+      <section className="summary" aria-live="polite">
         <p>{t.summaryNone}</p>
-      ) : (
-        lines.map((line) => <p key={line.key}>{line.text}</p>)
-      )}
+      </section>
+    );
+  }
+  return (
+    <section className="summary summary--profitable" aria-live="polite">
+      {opportunities.map(({ pair, direction: d }) => (
+        <p key={pair.pair}>
+          <strong>{pair.pair}</strong>{' '}
+          {t.direction(
+            exchangeName(exchanges, d.buyExchange),
+            exchangeName(exchanges, d.sellExchange),
+          )}{' '}
+          <strong>
+            {formatDecimal(d.netProfit, { maxFractionDigits: 4, signed: true })} {pair.quote}
+          </strong>
+        </p>
+      ))}
     </section>
   );
 }

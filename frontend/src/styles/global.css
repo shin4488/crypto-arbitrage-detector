@@ -172,31 +172,57 @@ tr.detail td {
   font-size: 1.1rem;
 }
 
-.lead {
-  font-size: 1.05rem;
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-/* 価格差 − 手数料 = 手数料込み の内訳 */
-.breakdown {
-  width: auto;
-  margin-top: 6px;
+.verdict {
+  display: grid;
+  gap: 6px;
 }
 
-.breakdown caption {
-  text-align: left;
-  caption-side: top;
+/* 方向の横に添える小さな札（「いちばん有利」「逆方向」など） */
+.tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+  color: GrayText;
+  white-space: nowrap;
 }
 
-.breakdown th {
+/* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */
+.equation,
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.figure {
+  display: inline-grid;
+  justify-items: center;
+}
+
+.figure__value {
+  font-size: 1.15rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.figure__label {
+  font-size: 0.75rem;
   font-weight: 400;
   color: GrayText;
-  padding-left: 0;
 }
 
-.breakdown tr.total > * {
-  font-weight: 600;
-  border-top: 2px solid var(--line);
-  border-bottom: none;
+.op {
+  color: GrayText;
+  font-size: 1.15rem;
 }
 
 details > summary {

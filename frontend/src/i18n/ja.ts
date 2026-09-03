@@ -1,7 +1,8 @@
 /** 日本語の文言。キーの一覧はこのファイルが基準で、ほかの言語も同じ形にする */
 export const ja = {
   appTitle: 'Crypto Arbitrage Detector',
-  appDescription: '取引所間の価格差から、手数料を引いても利益が出る売買を探します',
+  appDescription: '取引所間の価格差から、手数料込みで利益が出る売買を検知',
+  language: '言語',
 
   tabTitleNotification: 'タブのタイトルで通知',
   tabTitleNotificationHelp: '利益が出る機会がある間、ブラウザのタブのタイトルに表示します',
@@ -14,9 +15,7 @@ export const ja = {
   statusWatching: (names: string) => `監視中（${names} に接続）`,
 
   // 今の状態のまとめ
-  summaryNone: '今、利益の出る機会はありません',
-  summaryProfitable: (pair: string, buy: string, sell: string, profit: string) =>
-    `${pair}: ${buy} で買い → ${sell} で売り で ${profit} の利益`,
+  summaryNone: '今は利益の出る機会がありません',
 
   // 通貨ペアごとの枠
   waitingForData: '取引所からの板を待っています…',
@@ -24,36 +23,35 @@ export const ja = {
   badgeProfitable: '利益あり',
   badgeNone: '機会なし',
   badgeWaiting: 'データ待ち',
-  leadProfitable: (buy: string, quantity: string, sell: string) =>
-    `${buy} で ${quantity} を買い、${sell} で売ると`,
-  leadProfit: (profit: string) => `${profit} の利益`,
-  leadNone: (buy: string, sell: string) =>
-    `いちばん有利なのは「${buy} で買い → ${sell} で売り」ですが、手数料を引くと赤字です`,
-  perUnit: (base: string) => `1 ${base} あたり`,
+  tagBest: 'いちばん有利',
   rowSpread: '価格差',
   rowFees: '手数料',
   rowNet: '手数料込み',
-  shortfall: (amount: string, base: string) =>
-    `あと ${amount} / ${base} 価格差が広がれば利益が出ます`,
-  depthExhausted: '受信している板を使い切っているので、実際にはもっと多く取引できるかもしれません',
+  perUnit: (base: string, quote: string) => `${quote} / 1 ${base}`,
+  quantity: '数量',
+  netProfit: '純利益',
+  gapToProfit: '利益まで',
+  gapValue: (amount: string) => `あと ${amount}`,
+  depthExhausted: '板の受信範囲まで計算（実際はもっと多い可能性）',
 
   colExchange: '取引所',
   colSellPrice: '売れる価格 (bid)',
   colBuyPrice: '買える価格 (ask)',
   colUpdated: '更新',
 
-  details: '詳細（数量・板の深さ・もう一方の方向）',
-  detailQuantity: (sellQty: string, buyQty: string, levels: number) =>
-    `売れる数量 ${sellQty} / 買える数量 ${buyQty}（板${levels}段）`,
-  otherDirection: 'もう一方の方向',
+  details: '数量と逆方向',
+  colSellQty: '売れる数量',
+  colBuyQty: '買える数量',
+  colLevels: '板',
+  levels: (n: number) => `${n}段`,
+  reverse: '逆方向',
   direction: (buy: string, sell: string) => `${buy} で買い → ${sell} で売り`,
 
   // 履歴
   historyTitle: '機会の履歴',
   historyCount: (n: number) => `${n}件`,
   historyEmpty: 'まだ機会は検知されていません',
-  historyHelp:
-    '手数料を引いても利益が出ていた期間を1件として記録します（サーバーを再起動すると消えます）',
+  historyHelp: '手数料込みで利益が出ていた期間ごとに1件。再起動で消えます',
   colTime: '時刻',
   colPair: '通貨ペア',
   colTrade: '取引',
@@ -61,8 +59,8 @@ export const ja = {
   colDuration: '継続時間',
   ongoing: '継続中',
 
-  feeNote: (fees: string) =>
-    `手数料は ${fees}（taker）で計算しています。表示する利益は板のスナップショットから求めた理論値です`,
+  feeNote: (fees: string) => `手数料: ${fees}（taker）`,
+  theoreticalNote: '板のスナップショットから計算した理論値',
 
   ago: (ms: number) => `${formatDurationJa(ms)}前`,
   duration: (ms: number) => formatDurationJa(ms),

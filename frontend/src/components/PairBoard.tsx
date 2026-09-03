@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { formatDecimal, fractionDigitsOf } from '../format/number';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
@@ -19,8 +19,8 @@ const QUANTITY_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの枠。上から順に「今の状態 → その理由（価格差と手数料の内訳）→ 各取引所の価格」と読める並びにする。
- * 数量や板の深さ、もう一方の方向は普段は見なくてよいので「詳細」に畳む。
+ * 1つの通貨ペアの枠。上から「今の状態 → 方向と『価格差 − 手数料 ＝ 手数料込み』の式 → 各取引所の価格」の順。
+ * 数量と逆方向は普段は見なくてよいので畳んでおく。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
 export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardProps) {
@@ -69,39 +69,45 @@ interface VerdictProps {
   exchanges: ExchangeInfo[];
 }
 
-/** 今の状態を一文で言い切り、価格差と手数料の内訳でその理由を示す */
+/** 主役の方向と、1単位あたりの「価格差 − 手数料 ＝ 手数料込み」。機会があれば数量と純利益、なければ利益までの距離 */
 function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   const t = useT();
-  const buy = exchangeName(exchanges, d.buyExchange);
-  const sell = exchangeName(exchanges, d.sellExchange);
-
+  const digits = spreadDigits(d);
   return (
-    <div>
+    <div className="verdict">
+      <p>
+        <strong>
+          {t.direction(
+            exchangeName(exchanges, d.buyExchange),
+            exchangeName(exchanges, d.sellExchange),
+          )}
+        </strong>{' '}
+        <span className="tag">{d.profitable ? t.badgeProfitable : t.tagBest}</span>
+      </p>
+      <Equation direction={d} pair={pair} />
       {d.profitable ? (
-        <p className="lead">
-          {t.leadProfitable(
-            buy,
-            `${formatDecimal(d.quantity, { maxFractionDigits: QUANTITY_DIGITS })} ${pair.base}`,
-            sell,
-          )}{' '}
-          <strong className="pos">
-            <Flash value={d.netProfit}>
-              {t.leadProfit(
-                `${formatDecimal(d.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })} ${pair.quote}`,
-              )}
+        <p className="figures">
+          <Figure label={t.quantity}>
+            <Flash value={d.quantity}>
+              {formatDecimal(d.quantity, { maxFractionDigits: QUANTITY_DIGITS })} {pair.base}
             </Flash>
-          </strong>
+          </Figure>
+          <Figure label={t.netProfit} className="pos">
+            <Flash value={d.netProfit}>
+              {formatDecimal(d.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
+              {pair.quote}
+            </Flash>
+          </Figure>
         </p>
       ) : (
-        <p className="lead">{t.leadNone(buy, sell)}</p>
-      )}
-      <Breakdown direction={d} pair={pair} />
-      {!d.profitable && (
-        <p className="muted small">
-          {t.shortfall(
-            `${formatDecimal(d.netSpread.replace('-', ''), { maxFractionDigits: spreadDigits(d) })} ${pair.quote}`,
-            pair.base,
-          )}
+        <p className="figures">
+          <Figure label={t.gapToProfit}>
+            <Flash value={d.netSpread}>
+              {t.gapValue(
+                `${formatDecimal(d.netSpread.replace('-', ''), { maxFractionDigits: digits })} ${t.perUnit(pair.base, pair.quote)}`,
+              )}
+            </Flash>
+          </Figure>
         </p>
       )}
       {d.profitable && d.depthExhausted && <p className="warn small">{t.depthExhausted}</p>}
@@ -109,34 +115,44 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   );
 }
 
-/** 1単位あたりの内訳: 価格差 − 手数料 = 手数料込み */
-function Breakdown({ direction: d, pair }: { direction: Direction; pair: PairSnapshot }) {
+/** 1単位あたりの「価格差 − 手数料 ＝ 手数料込み」を式の形で並べる。文章を読まなくても数字の関係が分かる */
+function Equation({ direction: d, pair }: { direction: Direction; pair: PairSnapshot }) {
   const t = useT();
   const digits = spreadDigits(d);
-  const amount = (v: string) =>
-    `${formatDecimal(v, { maxFractionDigits: digits, signed: true })} ${pair.quote}`;
+  const amount = (v: string) => formatDecimal(v, { maxFractionDigits: digits, signed: true });
   return (
-    <table className="breakdown">
-      <caption className="muted small">{t.perUnit(pair.base)}</caption>
-      <tbody>
-        <tr>
-          <th scope="row">{t.rowSpread}</th>
-          <td className="num">
-            <Flash value={d.grossSpread}>{amount(d.grossSpread)}</Flash>
-          </td>
-        </tr>
-        <tr>
-          <th scope="row">{t.rowFees}</th>
-          <td className="num">{amount(`-${feePerUnit(d)}`)}</td>
-        </tr>
-        <tr className="total">
-          <th scope="row">{t.rowNet}</th>
-          <td className={`num ${d.profitable ? 'pos' : 'neg'}`}>
-            <Flash value={d.netSpread}>{amount(d.netSpread)}</Flash>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <p className="equation">
+      <Figure label={t.rowSpread}>
+        <Flash value={d.grossSpread}>{amount(d.grossSpread)}</Flash>
+      </Figure>
+      <span className="op">−</span>
+      <Figure label={t.rowFees}>
+        {formatDecimal(feePerUnit(d), { maxFractionDigits: digits })}
+      </Figure>
+      <span className="op">=</span>
+      <Figure label={t.rowNet} className={d.profitable ? 'pos' : 'neg'}>
+        <Flash value={d.netSpread}>{amount(d.netSpread)}</Flash>
+      </Figure>
+      <span className="muted small">{t.perUnit(pair.base, pair.quote)}</span>
+    </p>
+  );
+}
+
+/** 数字の下にラベルを添えた1項目 */
+function Figure({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <span className={`figure ${className ?? ''}`}>
+      <span className="figure__value">{children}</span>
+      <span className="figure__label">{label}</span>
+    </span>
   );
 }
 
@@ -202,41 +218,68 @@ interface DetailsProps {
   best: Direction | null;
 }
 
-/** 普段は見なくてよい情報: 最良気配の数量と板の段数、もう一方の方向の内訳 */
+/** 普段は見なくてよい情報: 最良価格での数量と板の段数、逆方向の手数料込みの値 */
 function Details({ pair, exchanges, best }: DetailsProps) {
   const t = useT();
-  const other = pair.directions.find((d) => d !== best);
+  const reverse = pair.directions.find((d) => d !== best);
   return (
     <div className="details">
-      <ul>
-        {exchanges.flatMap((ex) => {
-          const q = pair.quotes[ex.id];
-          if (!q) {
-            return [];
-          }
-          return [
-            <li key={ex.id}>
-              <strong>{ex.name}</strong>:{' '}
-              {t.detailQuantity(
-                `${formatDecimal(q.bid.quantity, { maxFractionDigits: QUANTITY_DIGITS })} ${pair.base}`,
-                `${formatDecimal(q.ask.quantity, { maxFractionDigits: QUANTITY_DIGITS })} ${pair.base}`,
-                Math.max(q.bidLevels, q.askLevels),
-              )}
-            </li>,
-          ];
-        })}
-      </ul>
-      {other && (
-        <div>
-          <p>
-            <strong>{t.otherDirection}</strong>:{' '}
-            {t.direction(
-              exchangeName(exchanges, other.buyExchange),
-              exchangeName(exchanges, other.sellExchange),
-            )}
-          </p>
-          <Breakdown direction={other} pair={pair} />
-        </div>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">{t.colExchange}</th>
+              <th scope="col" className="num">
+                {t.colSellQty}
+              </th>
+              <th scope="col" className="num">
+                {t.colBuyQty}
+              </th>
+              <th scope="col" className="num">
+                {t.colLevels}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {exchanges.flatMap((ex) => {
+              const q = pair.quotes[ex.id];
+              if (!q) {
+                return [];
+              }
+              return [
+                <tr key={ex.id}>
+                  <th scope="row">{ex.name}</th>
+                  <td className="num">
+                    {formatDecimal(q.bid.quantity, { maxFractionDigits: QUANTITY_DIGITS })}{' '}
+                    {pair.base}
+                  </td>
+                  <td className="num">
+                    {formatDecimal(q.ask.quantity, { maxFractionDigits: QUANTITY_DIGITS })}{' '}
+                    {pair.base}
+                  </td>
+                  <td className="num">{t.levels(Math.max(q.bidLevels, q.askLevels))}</td>
+                </tr>,
+              ];
+            })}
+          </tbody>
+        </table>
+      </div>
+      {reverse && (
+        <p>
+          <span className="tag">{t.reverse}</span>{' '}
+          {t.direction(
+            exchangeName(exchanges, reverse.buyExchange),
+            exchangeName(exchanges, reverse.sellExchange),
+          )}
+          {': '}
+          <span className="neg">
+            {formatDecimal(reverse.netSpread, {
+              maxFractionDigits: spreadDigits(reverse),
+              signed: true,
+            })}
+          </span>{' '}
+          <span className="muted small">{t.perUnit(pair.base, pair.quote)}</span>
+        </p>
       )}
     </div>
   );
