@@ -19,27 +19,41 @@ func writeFile(t *testing.T, content string) string {
 	return path
 }
 
-func TestLoad_Defaults(t *testing.T) {
+// builtin は組み込みの設定（backend/config.json）を読む。
+func builtin(t *testing.T) config.Config {
+	t.Helper()
+	cfg, err := config.Default()
+	if err != nil {
+		t.Fatalf("組み込みの設定（backend/config.json）を読めるはず: %v", err)
+	}
+	return cfg
+}
+
+// 組み込みの設定（backend/config.json）だけで起動できることを確かめる。
+// 通貨ペアを足すたびにこのテストを直さなくて済むよう、ペアの中身は見ず「妥当で、1つ以上ある」ことだけを見る。
+func TestLoad_BuiltinConfigOnly(t *testing.T) {
 	t.Parallel()
 	cfg, err := config.Load("", noEnv)
 	if err != nil {
-		t.Fatalf("既定値だけで妥当なはず: %v", err)
+		t.Fatalf("組み込みの設定だけで妥当なはず: %v", err)
 	}
-	if cfg.Server.Addr != ":8080" || len(cfg.Exchanges) != 2 || len(cfg.Pairs) != 5 || cfg.History.Limit != 200 {
-		t.Fatalf("cfg=%+v", cfg)
+	// Dockerfile の EXPOSE と docker-compose.yml のポート対応は 8080 を前提にしている
+	if cfg.Server.Addr != ":8080" {
+		t.Fatalf("addr=%s", cfg.Server.Addr)
 	}
-	if cfg.Exchanges[0].ID != "binance" || cfg.Exchanges[0].TakerFeeRate.String() != "0.001" {
-		t.Fatalf("exchanges=%+v", cfg.Exchanges)
+	ids := make(map[string]bool, len(cfg.Exchanges))
+	for _, ex := range cfg.Exchanges {
+		ids[ex.ID] = true
+	}
+	if !ids["binance"] || !ids["okx"] {
+		t.Fatalf("Binance と OKX を突き合わせるのが前提: %+v", cfg.Exchanges)
 	}
 	pairs, err := cfg.ParsedPairs()
 	if err != nil {
 		t.Fatalf("ParsedPairs: %v", err)
 	}
-	want := []string{"BTC/USDT", "ETH/USDT", "XRP/USDT", "SHIB/USDT", "DOGE/USDT"}
-	for i, p := range pairs {
-		if p.String() != want[i] {
-			t.Fatalf("pairs[%d]=%s want=%s", i, p, want[i])
-		}
+	if len(pairs) == 0 {
+		t.Fatal("通貨ペアは1つ以上のはず")
 	}
 }
 
@@ -84,8 +98,9 @@ func TestLoad_PartialFileKeepsOtherDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if cfg.Server.Addr != ":8080" || len(cfg.Exchanges) != 2 || len(cfg.Pairs) != 1 {
-		t.Fatalf("cfg=%+v", cfg)
+	def := builtin(t)
+	if cfg.Server.Addr != def.Server.Addr || len(cfg.Exchanges) != len(def.Exchanges) || len(cfg.Pairs) != 1 {
+		t.Fatalf("書いたキー以外は組み込みの設定のまま: cfg=%+v", cfg)
 	}
 }
 

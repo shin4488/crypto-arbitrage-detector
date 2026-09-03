@@ -1,6 +1,8 @@
 // Package config はサーバーの設定を扱う。
 //
-// 設定は「コード内の既定値 → JSON ファイル → 環境変数」の順に上書きされる。
+// 設定は「組み込みの設定 → JSON ファイル → 環境変数」の順に上書きされる。
+// 組み込みの設定は backend/config.json をビルド時にバイナリへ埋め込んだもので、通貨ペアの追加のような
+// 普段の設定変更はそのファイルを編集して起動し直すだけでよい（ファイルの配置や環境変数は要らない）。
 // JSON を採用しているのは標準ライブラリだけで読めるため（依存パッケージを増やさない）。
 // 機密情報（API キー等）は現状不要だが、必要になった場合も環境変数で渡し、ファイルには書かない方針。
 package config
@@ -15,6 +17,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	"github.com/shin4488/crypto-arbitrage-detector/backend"
 	"github.com/shin4488/crypto-arbitrage-detector/backend/internal/domain"
 )
 
@@ -69,27 +72,27 @@ type LogConfig struct {
 	Format string `json:"format"`
 }
 
-// Default は既定の設定。手数料率は各取引所の一般ユーザー向け spot taker 手数料（2026年時点）。
-func Default() Config {
-	return Config{
-		Server: ServerConfig{Addr: ":8080"},
-		Exchanges: []ExchangeConfig{
-			{ID: "binance", Name: "Binance", TakerFeeRate: decimal.RequireFromString("0.001")},
-			{ID: "okx", Name: "OKX", TakerFeeRate: decimal.RequireFromString("0.001")},
-		},
-		Pairs:   []string{"BTC/USDT", "ETH/USDT", "XRP/USDT", "SHIB/USDT", "DOGE/USDT"},
-		History: HistoryConfig{Limit: 200},
-		Log:     LogConfig{Level: "info", Format: "text"},
+// Default は組み込みの設定（backend/config.json をビルド時に埋め込んだもの）。
+// JSON にはコメントを書けないので、各キーの意味は README の「設定」に書いてある。
+// 手数料率は各取引所の一般ユーザー向け spot taker 手数料（2026年時点）。
+func Default() (Config, error) {
+	var cfg Config
+	if err := parseInto(&cfg, backend.ConfigJSON); err != nil {
+		return Config{}, fmt.Errorf("組み込みの設定（backend/config.json）: %w", err)
 	}
+	return cfg, nil
 }
 
-// Load は既定値に JSON ファイル（path が空なら読まない）と環境変数を重ねて設定を作る。
+// Load は組み込みの設定に JSON ファイル（path が空なら読まない）と環境変数を重ねて設定を作る。
 // getenv は環境変数の取得関数（テストで差し替える）。nil なら os.Getenv。
 func Load(path string, getenv func(string) string) (Config, error) {
 	if getenv == nil {
 		getenv = os.Getenv
 	}
-	cfg := Default()
+	cfg, err := Default()
+	if err != nil {
+		return Config{}, err
+	}
 	if path == "" {
 		path = getenv(EnvConfigPath)
 	}

@@ -137,7 +137,7 @@ Go も Node.js もローカルに入れずに済むように、どちらも Dock
 | 画面 | http://localhost:8080 | http://localhost:3000（バックエンドは 8080） |
 | ソースの変更 | 反映されない（ビルド済みの画面を配信） | 自動で反映（画面は数秒、バックエンドは再起動） |
 
-設定を変えるときは `backend/config.example.json` をコピーして `config.json` を作り、`docker-compose.yml` の `ARB_CONFIG` と `volumes` のコメントを外します。
+設定（通貨ペアなど）は `backend/config.json` にあります。変えたら起動し直すだけで反映されます（本番相当はビルド時に埋め込むので `docker compose up --build` で作り直す。`make dev` は自動で再起動する）。
 
 ### 検査
 
@@ -160,7 +160,7 @@ make lint   # 静的検査（golangci-lint、型検査、Biome）
 | 受け取る板 | 上位 20 段、100ms ごと | 上位 5 段、変化があったとき（100ms） |
 | 接続 | 常時接続（WebSocket） | 常時接続（WebSocket） |
 
-通貨ペアは BTC・ETH・XRP・SHIB・DOGE の各 /USDT。設定で増やせます。
+通貨ペアは `backend/config.json` の `pairs` に書いたもの（`BASE/QUOTE` 形式、いくつでも）。全ペアを両取引所で同じように扱います。
 
 ### 利益の計算式
 
@@ -192,9 +192,11 @@ make lint   # 静的検査（golangci-lint、型検査、Biome）
 
 ## 設定
 
-「コードの既定値 → JSON ファイル → 環境変数」の順に上書きされます。JSON に知らないキーがあるとエラーにします（タイプミスに気づけるように）。
+設定は `backend/config.json` に書き、ビルド時にバイナリへ埋め込みます。通貨ペアの追加のような普段の変更はこのファイルを編集して起動し直すだけで、ファイルの配置や環境変数は要りません。
 
-| キー | 既定値 | 説明 |
+イメージを作り直さずに一部だけ変えたいときは、環境変数 `ARB_CONFIG` で別の JSON ファイルを渡します（書いたキーだけ上書き。`docker-compose.yml` にコメントで例があります）。優先順位は「`backend/config.json` → `ARB_CONFIG` のファイル → 環境変数」です。JSON に知らないキーがあるとエラーにします（タイプミスに気づけるように）。
+
+| キー | 値（`backend/config.json`） | 説明 |
 | --- | --- | --- |
 | `server.addr` | `":8080"` | 待ち受けアドレス |
 | `server.allowedOrigins` | `[]` | WebSocket 接続を許可する追加の Origin。同一オリジンは常に許可 |
@@ -202,7 +204,7 @@ make lint   # 静的検査（golangci-lint、型検査、Biome）
 | `exchanges[].name` | 取引所ごとの既定名 | 表示名 |
 | `exchanges[].takerFeeRate` | `"0.001"` | taker 手数料率（0.001 = 0.1%） |
 | `exchanges[].wsUrl` | 取引所ごとの既定 URL | 接続先の上書き。テストやプロキシ用 |
-| `pairs` | BTC, ETH, XRP, SHIB, DOGE の各 /USDT | 通貨ペア（`BASE/QUOTE` 形式） |
+| `pairs` | `["BTC/USDT", ...]` | 監視する通貨ペアの一覧（`BASE/QUOTE` 形式。1 つ以上、重複不可） |
 | `history.limit` | `200` | 保持する履歴の件数 |
 | `log.level` | `"info"` | `debug` / `info` / `warn` / `error` |
 | `log.format` | `"text"` | `text` / `json` |
@@ -213,7 +215,7 @@ API キーのような機密情報は使いません（公開のマーケット�
 
 ### 通貨ペア・取引所を増やす
 
-- **通貨ペア**: 設定の `pairs` に `"SOL/USDT"` のように書き足すだけ。取引所ごとのシンボル表記（`SOLUSDT`、`SOL-USDT`）は自動で組み立てる
+- **通貨ペア**: `backend/config.json` の `pairs` に `"SOL/USDT"` のように書き足して起動し直すだけ。コードにペアの一覧はなく、取引所ごとのシンボル表記（`SOLUSDT`、`SOL-USDT`）も画面のカードも自動で組み立てる。取引金額の単位は先頭のペアの Quote 通貨で表示するので、Quote 通貨はそろえておく
 - **取引所**: `backend/internal/exchange/` に `exchange.Feed` を実装したパッケージを作り、`registry` に登録する。全組み合わせを評価するので 3 つ以上でも動く
 
 ## 構成
@@ -232,6 +234,7 @@ flowchart LR
 
 ```
 backend/
+  config.json            設定（通貨ペア・取引所・手数料率など）。ビルド時にバイナリへ埋め込む
   cmd/server/            起動処理（設定の読み込み、終了シグナル、ヘルスチェック）
   internal/
     domain/              通貨ペア・板などの基本の型

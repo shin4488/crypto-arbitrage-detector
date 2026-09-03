@@ -71,8 +71,18 @@ func freePort(t *testing.T) string {
 	return addr
 }
 
+// builtinConfig は組み込みの設定（backend/config.json）。テストでは接続先やポートを差し替えて使う。
+func builtinConfig(t *testing.T) config.Config {
+	t.Helper()
+	cfg, err := config.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cfg
+}
+
 func TestApp_EndToEnd(t *testing.T) {
-	cfg := config.Default()
+	cfg := builtinConfig(t)
 	cfg.Server.Addr = freePort(t)
 	cfg.Pairs = []string{"BTC/USDT"}
 	cfg.Exchanges[0].WSURL = fakeBinance(t)
@@ -157,7 +167,7 @@ func TestApp_EndToEnd(t *testing.T) {
 
 func TestApp_RejectsUnknownExchange(t *testing.T) {
 	t.Parallel()
-	cfg := config.Default()
+	cfg := builtinConfig(t)
 	cfg.Exchanges[1].ID = "bybit"
 	if _, err := app.New(cfg, slog.New(slog.DiscardHandler)); err == nil {
 		t.Fatal("未対応の取引所はエラー")
@@ -172,7 +182,7 @@ func TestApp_FailsWhenPortInUse(t *testing.T) {
 	}
 	defer ln.Close()
 
-	cfg := config.Default()
+	cfg := builtinConfig(t)
 	cfg.Server.Addr = ln.Addr().String()
 	cfg.Exchanges[0].WSURL = "ws://127.0.0.1:1"
 	cfg.Exchanges[1].WSURL = "ws://127.0.0.1:1"
