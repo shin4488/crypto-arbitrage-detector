@@ -160,7 +160,7 @@ make lint   # 静的検査（golangci-lint、型検査、Biome）
 | 受け取る板 | 上位 20 段、100ms ごと | 上位 5 段、変化があったとき（100ms） |
 | 接続 | 常時接続（WebSocket） | 常時接続（WebSocket） |
 
-通貨ペアは BTC・ETH・XRP・SHIB・DOGE の各 /USDT。`backend/config.json` で増やせます。
+通貨ペアは `backend/config.json` の `pairs` に書いたもの（`BASE/QUOTE` 形式、いくつでも）。全ペアを両取引所で同じように扱います。
 
 ### 利益の計算式
 
@@ -204,7 +204,7 @@ make lint   # 静的検査（golangci-lint、型検査、Biome）
 | `exchanges[].name` | 取引所ごとの既定名 | 表示名 |
 | `exchanges[].takerFeeRate` | `"0.001"` | taker 手数料率（0.001 = 0.1%） |
 | `exchanges[].wsUrl` | 取引所ごとの既定 URL | 接続先の上書き。テストやプロキシ用 |
-| `pairs` | BTC, ETH, XRP, SHIB, DOGE の各 /USDT | 通貨ペア（`BASE/QUOTE` 形式） |
+| `pairs` | `["BTC/USDT", ...]` | 監視する通貨ペアの一覧（`BASE/QUOTE` 形式。1 つ以上、重複不可） |
 | `history.limit` | `200` | 保持する履歴の件数 |
 | `log.level` | `"info"` | `debug` / `info` / `warn` / `error` |
 | `log.format` | `"text"` | `text` / `json` |

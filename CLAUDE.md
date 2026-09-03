@@ -5,7 +5,7 @@ Claude Code がこのリポジトリで作業するときの手引き。
 ## 何をするものか
 
 Binance と OKX の板を突き合わせ、手数料を引いても利益が残る裁定の機会を見つけて表示する。注文は出さない。
-対象は BTC / ETH / XRP / SHIB / DOGE の各 USDT ペア（`backend/config.json` の `pairs` で増減できる）。
+対象の通貨ペアは `backend/config.json` の `pairs` で決まる（`BASE/QUOTE` 形式）。コードやドキュメントにペアの一覧は書かない。
 仕様・構成・動かし方は README.md にまとめてある。
 
 - `backend/`: Go。取引所との WebSocket 接続、検知、配信、フロントエンドの埋め込み配信
