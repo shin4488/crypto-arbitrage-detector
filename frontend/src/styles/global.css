@@ -419,18 +419,13 @@ tr.detail td {
   gap: 16px;
 }
 
-/* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */
-.equation,
-.figures {
+/* 数字の下にラベルを添えた項目を横に並べた式（価格差 − 手数料 ＝ 差引） */
+.equation {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center; /* 式はカードの主役なので横方向の中央に置く */
   align-items: center;
   gap: 8px 20px;
-}
-
-/* 式はカードの主役なので、横方向の中央に置く */
-.equation {
-  justify-content: center;
 }
 
 .figure {
