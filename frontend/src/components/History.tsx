@@ -1,4 +1,4 @@
-import { formatDecimal } from '../format/number';
+import { formatDecimal, quantityFractionDigits } from '../format/number';
 import { useT } from '../i18n';
 import type { Episode, ExchangeInfo } from '../protocol/types';
 import { exchangeName } from '../state/selectors';
@@ -58,7 +58,11 @@ export function History({ history, exchanges, amount }: HistoryProps) {
                         exchangeName(exchanges, ep.sellExchange),
                       )}{' '}
                       <span className="muted small">
-                        ({formatDecimal(trade.quantity, { maxFractionDigits: 8 })} {base})
+                        (
+                        {formatDecimal(trade.quantity, {
+                          maxFractionDigits: quantityFractionDigits(trade.quantity),
+                        })}{' '}
+                        {base})
                       </span>
                     </td>
                     <td className="num pos">

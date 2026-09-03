@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from 'react';
-import { formatDecimal, multiplyDecimals } from '../format/number';
+import { formatDecimal, multiplyDecimals, quantityFractionDigits } from '../format/number';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
 import { bestDirection, exchangeName } from '../state/selectors';
@@ -16,8 +16,6 @@ interface PairBoardProps {
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
 const PRICE_DIGITS = 8;
-/** 数量（Base 通貨）の表示桁数 */
-const QUANTITY_DIGITS = 8;
 /** 金額（Quote 通貨）の表示桁数 */
 const AMOUNT_DIGITS = 4;
 
@@ -71,7 +69,9 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
   const t = useT();
   const plan = planForAmount(d, amount);
   const money = (v: string) => formatDecimal(v, { maxFractionDigits: AMOUNT_DIGITS, signed: true });
-  const quantity = formatDecimal(plan.quantity, { maxFractionDigits: QUANTITY_DIGITS });
+  const quantity = formatDecimal(plan.quantity, {
+    maxFractionDigits: quantityFractionDigits(plan.quantity),
+  });
   // 実際にかかる金額（数量 × 買値）。数量を8桁で切っているので、指定額とわずかにずれることがある
   const cost = formatDecimal(multiplyDecimals(plan.quantity, d.bestAsk.price), {
     maxFractionDigits: 2,

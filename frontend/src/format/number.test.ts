@@ -5,6 +5,7 @@ import {
   formatPercent,
   fractionDigitsOf,
   multiplyDecimals,
+  quantityFractionDigits,
   shiftDecimalPoint,
   signOf,
   subtractDecimals,
@@ -137,5 +138,20 @@ describe('divideDecimals', () => {
   it('ゼロ除算や数値でない文字列は NaN', () => {
     expect(divideDecimals('1', '0')).toBe('NaN');
     expect(divideDecimals('x', '1')).toBe('NaN');
+  });
+});
+
+describe('quantityFractionDigits', () => {
+  it.each([
+    ['0.00128638', 8],
+    ['0.3', 8],
+    ['1', 4],
+    ['41.5', 4],
+    ['999.99', 4],
+    ['1000', 2],
+    ['8103727.71474878', 2],
+    ['abc', 8],
+  ])('%s → %d桁', (input, want) => {
+    expect(quantityFractionDigits(input)).toBe(want);
   });
 });

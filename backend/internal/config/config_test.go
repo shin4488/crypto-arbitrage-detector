@@ -25,15 +25,21 @@ func TestLoad_Defaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("既定値だけで妥当なはず: %v", err)
 	}
-	if cfg.Server.Addr != ":8080" || len(cfg.Exchanges) != 2 || len(cfg.Pairs) != 2 || cfg.History.Limit != 200 {
+	if cfg.Server.Addr != ":8080" || len(cfg.Exchanges) != 2 || len(cfg.Pairs) != 5 || cfg.History.Limit != 200 {
 		t.Fatalf("cfg=%+v", cfg)
 	}
 	if cfg.Exchanges[0].ID != "binance" || cfg.Exchanges[0].TakerFeeRate.String() != "0.001" {
 		t.Fatalf("exchanges=%+v", cfg.Exchanges)
 	}
 	pairs, err := cfg.ParsedPairs()
-	if err != nil || pairs[0].String() != "BTC/USDT" || pairs[1].String() != "ETH/USDT" {
-		t.Fatalf("pairs=%v err=%v", pairs, err)
+	if err != nil {
+		t.Fatalf("ParsedPairs: %v", err)
+	}
+	want := []string{"BTC/USDT", "ETH/USDT", "XRP/USDT", "SHIB/USDT", "DOGE/USDT"}
+	for i, p := range pairs {
+		if p.String() != want[i] {
+			t.Fatalf("pairs[%d]=%s want=%s", i, p, want[i])
+		}
 	}
 }
 
