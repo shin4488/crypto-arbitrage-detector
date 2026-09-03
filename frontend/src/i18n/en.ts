@@ -68,7 +68,7 @@ export const en: Dict = {
     `${exchange}: ${tier} maker ${maker} / taker ${taker}`,
   feeInfoLink: 'official fee page',
   feeInfoTier:
-    'Fees depend on your tier (30-day volume, BNB/OKB holdings, etc.). To match your own rates, change takerFeeRate in the config file.',
+    'Fees depend on your tier (30-day volume, BNB/OKB holdings, etc.). If your own fees are lower than these, your actual profit is larger than shown; if higher, smaller.',
   feeInfoTaker:
     'Taker fees apply because arbitrage takes existing orders immediately; maker fees only apply to resting orders.',
   theoreticalNote: 'Values are theoretical, calculated from order book data',

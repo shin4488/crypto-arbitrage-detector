@@ -459,6 +459,11 @@ tbody th {
   gap: 16px;
 }
 
+/* 方向（どこで買ってどこで売るか）は、すぐ下の式と同じ中央ぞろえにして一続きに読めるようにする */
+.direction {
+  text-align: center;
+}
+
 /* 数字の下にラベルを添えた項目を横に並べた式（価格差 − 手数料 ＝ 差引） */
 .equation {
   display: flex;
