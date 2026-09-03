@@ -90,7 +90,9 @@ describe('Dashboard', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('利益なし')).toBeTruthy();
-    expect(within(btc).getByText('Binanceで買い → OKXで売り')).toBeTruthy();
+    expect(within(btc).getByText('Binanceで買い').closest('strong')).toHaveTextContent(
+      'Binanceで買い → OKXで売り',
+    );
     expect(within(btc).getByText('有利な方向')).toBeTruthy();
     // 価格差 +3.04 − 手数料 130.87 = 差引 −127.83（USDT / 1 BTC）
     expect(within(btc).getByText('+3.04')).toBeTruthy();
@@ -104,7 +106,9 @@ describe('Dashboard', () => {
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.className).toContain('card--profitable');
     expect(within(btc).getAllByText('利益あり').length).toBeGreaterThan(0);
-    expect(within(btc).getByText('OKXで買い → Binanceで売り')).toBeTruthy();
+    expect(within(btc).getByText('OKXで買い').closest('strong')).toHaveTextContent(
+      'OKXで買い → Binanceで売り',
+    );
     expect(within(btc).queryByText('有利な方向')).toBeNull();
     expect(within(btc).getByText('0.3 BTC')).toBeTruthy();
     expect(within(btc).getByText('+0.2397 USDT')).toBeTruthy();
@@ -115,13 +119,23 @@ describe('Dashboard', () => {
     expect(within(btc).getByText(/取得済みの板の範囲での値/)).toBeTruthy();
   });
 
-  it('各取引所の売値・買値を表示する', () => {
+  it('各取引所の買値・売値を「買って売る」の順に並べ、有利な方向で使う価格に色を付ける', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
-    expect(within(btc).getByText('65,433.79')).toBeTruthy();
-    expect(within(btc).getByText('65,433.8')).toBeTruthy();
-    expect(within(btc).getByText('65,436.85')).toBeTruthy();
-    expect(within(btc).getByRole('columnheader', { name: '売値 (bid)' })).toBeTruthy();
+    const headers = within(btc)
+      .getAllByRole('columnheader')
+      .map((th) => th.textContent);
+    expect(headers).toEqual(['取引所', '買値 (ask)', '売値 (bid)', '更新']);
+    // 有利な方向は Binance で買い → OKX で売り: Binance の買値と OKX の売値に色が付く
+    const buyCell = within(btc).getByText('65,433.8').closest('td');
+    const sellCell = within(btc).getByText('65,436.84').closest('td');
+    expect(buyCell?.className).toContain('pick--buy');
+    expect(within(buyCell as HTMLElement).getByText('買')).toBeTruthy();
+    expect(sellCell?.className).toContain('pick--sell');
+    expect(within(sellCell as HTMLElement).getByText('売')).toBeTruthy();
+    // 使わない価格には色を付けない
+    expect(within(btc).getByText('65,433.79').closest('td')?.className).not.toContain('pick');
+    expect(within(btc).getByText('65,436.85').closest('td')?.className).not.toContain('pick');
   });
 
   it('板に並ぶ数量や逆方向の値は出さない（判断に使わないため）', () => {
@@ -129,7 +143,7 @@ describe('Dashboard', () => {
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.querySelector('details')).toBeNull();
     expect(within(btc).queryByText('0.52 BTC')).toBeNull();
-    expect(within(btc).queryByText(/OKXで買い → Binanceで売り/)).toBeNull();
+    expect(within(btc).queryByText('OKXで買い')).toBeNull();
   });
 
   it('板が無いペアはデータ待ちと表示する', () => {

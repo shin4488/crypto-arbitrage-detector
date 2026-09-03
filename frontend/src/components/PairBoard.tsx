@@ -51,7 +51,7 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardP
         <Verdict direction={best} pair={pair} exchanges={exchanges} />
       )}
 
-      {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} />}
+      {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
     </section>
   );
 });
@@ -70,10 +70,9 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
       <p>
         {!d.profitable && <span className="muted small">{t.bestDirection} </span>}
         <strong>
-          {t.direction(
-            exchangeName(exchanges, d.buyExchange),
-            exchangeName(exchanges, d.sellExchange),
-          )}
+          <span className="buy">{t.buyOn(exchangeName(exchanges, d.buyExchange))}</span>
+          {' → '}
+          <span className="sell">{t.sellOn(exchangeName(exchanges, d.sellExchange))}</span>
         </strong>
       </p>
       <Equation direction={d} pair={pair} />
@@ -143,8 +142,19 @@ function spreadDigits(d: Direction): number {
   return Math.max(2, fractionDigitsOf(d.bestAsk.price), fractionDigitsOf(d.bestBid.price));
 }
 
-/** 取引所ごとの売値（bid）と買値（ask） */
-function QuoteTable({ pair, exchanges }: { pair: PairSnapshot; exchanges: ExchangeInfo[] }) {
+/**
+ * 取引所ごとの買値（ask）と売値（bid）。「買って売る」の順に読めるよう買値を左に置く。
+ * 有利な方向で使う2つの価格（買う取引所の買値、売る取引所の売値）に色と札を付け、いくらで買っていくらで売るかを一目で示す。
+ */
+function QuoteTable({
+  pair,
+  exchanges,
+  best,
+}: {
+  pair: PairSnapshot;
+  exchanges: ExchangeInfo[];
+  best: Direction | null;
+}) {
   const t = useT();
   return (
     <div className="table-scroll">
@@ -153,10 +163,10 @@ function QuoteTable({ pair, exchanges }: { pair: PairSnapshot; exchanges: Exchan
           <tr>
             <th scope="col">{t.colExchange}</th>
             <th scope="col" className="num">
-              {t.colSellPrice}
+              {t.colBuyPrice}
             </th>
             <th scope="col" className="num">
-              {t.colBuyPrice}
+              {t.colSellPrice}
             </th>
             <th scope="col" className="num">
               {t.colUpdated}
@@ -169,17 +179,21 @@ function QuoteTable({ pair, exchanges }: { pair: PairSnapshot; exchanges: Exchan
             if (!q) {
               return [];
             }
+            const isBuy = best?.buyExchange === ex.id;
+            const isSell = best?.sellExchange === ex.id;
             return [
               <tr key={ex.id}>
                 <th scope="row">{ex.name}</th>
-                <td className="num">
-                  <Flash value={q.bid.price}>
-                    {formatDecimal(q.bid.price, { maxFractionDigits: PRICE_DIGITS })}
-                  </Flash>
-                </td>
-                <td className="num">
+                <td className={`num ${isBuy ? 'pick pick--buy' : ''}`}>
+                  {isBuy && <span className="pick__tag">{t.pickBuy}</span>}
                   <Flash value={q.ask.price}>
                     {formatDecimal(q.ask.price, { maxFractionDigits: PRICE_DIGITS })}
+                  </Flash>
+                </td>
+                <td className={`num ${isSell ? 'pick pick--sell' : ''}`}>
+                  {isSell && <span className="pick__tag">{t.pickSell}</span>}
+                  <Flash value={q.bid.price}>
+                    {formatDecimal(q.bid.price, { maxFractionDigits: PRICE_DIGITS })}
                   </Flash>
                 </td>
                 <td className="num muted small">

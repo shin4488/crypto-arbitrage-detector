@@ -8,6 +8,10 @@
   --pos: light-dark(#137a3a, #5ad07f);
   --pos-bg: light-dark(#e6f6ec, #15301f);
   --neg: light-dark(#b42318, #ff7b70);
+  --buy: light-dark(#1d4ed8, #8ab4ff);
+  --buy-bg: light-dark(#dbeafe, #172a4d);
+  --sell: light-dark(#b45309, #ffc46b);
+  --sell-bg: light-dark(#fef3c7, #3f2f0a);
   --warn: light-dark(#7a4b00, #ffd27a);
   --line: color-mix(in srgb, CanvasText 15%, transparent);
   --flash: light-dark(rgb(255 213 0 / 45%), rgb(255 213 0 / 30%));
@@ -51,10 +55,10 @@ h2 {
 }
 
 .app {
-  max-width: 1100px;
+  max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  gap: 28px;
+  gap: 22px;
 }
 
 .muted {
@@ -71,6 +75,14 @@ h2 {
 
 .neg {
   color: var(--neg);
+}
+
+.buy {
+  color: var(--buy);
+}
+
+.sell {
+  color: var(--sell);
 }
 
 .warn {
@@ -93,19 +105,19 @@ h2 {
 
 .boards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 470px), 1fr));
+  gap: 20px;
 }
 
 .card {
   min-width: 0; /* 中の表の幅に引っ張られて枠からはみ出さないようにする */
   align-content: start; /* 横に並んだ枠の高さがそろうとき、中身が縦に間延びしないようにする */
-  padding: 22px 24px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px color-mix(in srgb, CanvasText 8%, transparent);
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .card--profitable {
@@ -133,6 +145,38 @@ h2 {
   overflow-x: auto;
 }
 
+/* 有利な方向で使う価格のセル。買いは青、売りは橙 */
+td.pick {
+  font-weight: 600;
+}
+
+td.pick--buy {
+  background: var(--buy-bg);
+  color: var(--buy);
+}
+
+td.pick--sell {
+  background: var(--sell-bg);
+  color: var(--sell);
+}
+
+.pick__tag {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: Canvas;
+}
+
+td.pick--buy .pick__tag {
+  background: var(--buy);
+}
+
+td.pick--sell .pick__tag {
+  background: var(--sell);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -140,7 +184,7 @@ table {
 
 th,
 td {
-  padding: 9px 10px;
+  padding: 7px 10px;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
@@ -271,7 +315,7 @@ tr.detail td {
 
 .verdict {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */

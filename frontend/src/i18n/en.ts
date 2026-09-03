@@ -33,6 +33,10 @@ export const en: Dict = {
   colUpdated: 'Updated',
 
   direction: (buy: string, sell: string) => `Buy on ${buy} → sell on ${sell}`,
+  buyOn: (exchange: string) => `Buy on ${exchange}`,
+  sellOn: (exchange: string) => `Sell on ${exchange}`,
+  pickBuy: 'Buy',
+  pickSell: 'Sell',
 
   historyTitle: 'Detections',
   historyCount: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
