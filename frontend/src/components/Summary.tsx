@@ -8,7 +8,7 @@ interface SummaryProps {
   exchanges: ExchangeInfo[];
 }
 
-/** 「今、利益の出る機会があるか」を画面の最初に示す。機会があればペア・方向・利益を1行ずつ */
+/** 利益が出る取引があるときだけ、画面の最初にペア・方向・利益を1行ずつ出す。無いときは各ペアの「利益なし」で足りる */
 export function Summary({ pairs, exchanges }: SummaryProps) {
   const t = useT();
   const opportunities = pairs.flatMap((pair) => {
@@ -17,11 +17,7 @@ export function Summary({ pairs, exchanges }: SummaryProps) {
   });
 
   if (opportunities.length === 0) {
-    return (
-      <section className="summary" aria-live="polite">
-        <p>{t.summaryNone}</p>
-      </section>
-    );
+    return null;
   }
   return (
     <section className="summary summary--profitable" aria-live="polite">

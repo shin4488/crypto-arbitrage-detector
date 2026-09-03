@@ -62,28 +62,22 @@ interface VerdictProps {
   exchanges: ExchangeInfo[];
 }
 
-/** 主役の方向と、1単位あたりの「価格差 − 手数料 ＝ 差引」。利益が出れば数量と純利益、出なければ利益までの距離 */
+/** 主役の方向と、1単位あたりの「価格差 − 手数料 ＝ 差引」。利益が出るときは数量と純利益も出す */
 function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   const t = useT();
-  const digits = spreadDigits(d);
   return (
     <div className="verdict">
       <p>
+        {!d.profitable && <span className="muted small">{t.bestDirection} </span>}
         <strong>
           {t.direction(
             exchangeName(exchanges, d.buyExchange),
             exchangeName(exchanges, d.sellExchange),
           )}
         </strong>
-        {!d.profitable && (
-          <>
-            {' '}
-            <span className="tag">{t.tagBest}</span>
-          </>
-        )}
       </p>
       <Equation direction={d} pair={pair} />
-      {d.profitable ? (
+      {d.profitable && (
         <p className="figures">
           <Figure label={t.quantity}>
             <Flash value={d.quantity}>
@@ -96,14 +90,6 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
               {pair.quote}
             </Flash>
           </Figure>
-        </p>
-      ) : (
-        <p>
-          <Flash value={d.netSpread}>
-            {t.gapToProfit(
-              `${formatDecimal(d.netSpread.replace('-', ''), { maxFractionDigits: digits })} ${t.perUnit(pair.base, pair.quote)}`,
-            )}
-          </Flash>
         </p>
       )}
       {d.profitable && d.depthExhausted && <p className="warn small">{t.depthExhausted}</p>}

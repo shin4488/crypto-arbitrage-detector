@@ -26,9 +26,12 @@ export function Header({
   return (
     <header>
       <div className="header">
-        <div>
-          <h1>{t.appTitle}</h1>
-          <p className="muted">{t.appDescription}</p>
+        <div className="brand">
+          <img src="/favicon.svg" alt="" width="36" height="36" />
+          <div>
+            <h1>{t.appTitle}</h1>
+            <p className="muted">{t.appDescription}</p>
+          </div>
         </div>
         <div className="controls">
           <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />

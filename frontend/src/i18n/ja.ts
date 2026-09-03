@@ -13,23 +13,19 @@ export const ja = {
   statusExchangeDisconnected: (names: string) => `${names}との接続が切れました。再接続中…`,
   statusWatching: (names: string) => `${names}に接続中`,
 
-  // 今の状態のまとめ
-  summaryNone: '現在、利益の出る取引はありません',
-
   // 通貨ペアごとの枠
   waitingForData: '取引所からのデータを待っています…',
   notEvaluable: '両取引所のデータがそろい次第、判定します',
   badgeProfitable: '利益あり',
   badgeNone: '利益なし',
   badgeWaiting: 'データ待ち',
-  tagBest: '有利な方向',
+  bestDirection: '有利な方向',
   rowSpread: '価格差',
   rowFees: '手数料',
   rowNet: '差引',
   perUnit: (base: string, quote: string) => `${quote} / 1 ${base}`,
   quantity: '数量',
   netProfit: '純利益',
-  gapToProfit: (amount: string) => `利益まであと ${amount}`,
   depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
 
   colExchange: '取引所',

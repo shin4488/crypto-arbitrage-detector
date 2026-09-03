@@ -13,21 +13,18 @@ export const en: Dict = {
   statusExchangeDisconnected: (names: string) => `Lost connection to ${names}. Reconnecting…`,
   statusWatching: (names: string) => `Connected to ${names}`,
 
-  summaryNone: 'No profitable trade right now',
-
   waitingForData: 'Waiting for exchange data…',
   notEvaluable: 'Evaluated once both exchanges have sent data',
   badgeProfitable: 'Profitable',
   badgeNone: 'Not profitable',
   badgeWaiting: 'Waiting for data',
-  tagBest: 'Better direction',
+  bestDirection: 'Better direction',
   rowSpread: 'Price gap',
   rowFees: 'Fees',
   rowNet: 'Net',
   perUnit: (base: string, quote: string) => `${quote} / 1 ${base}`,
   quantity: 'Quantity',
   netProfit: 'Net profit',
-  gapToProfit: (amount: string) => `${amount} short of profit`,
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
   colExchange: 'Exchange',

@@ -72,9 +72,9 @@ describe('Dashboard', () => {
     expect(screen.getByRole('region', { name: 'BTC/USDT' })).toBeTruthy();
   });
 
-  it('機会が無ければ最初の1行でそう言う', () => {
+  it('利益が出ないときは、まとめの帯を出さない（各ペアの「利益なし」で足りる）', () => {
     renderDashboard(initialized);
-    expect(screen.getByText('現在、利益の出る取引はありません')).toBeTruthy();
+    expect(document.querySelector('section.summary')).toBeNull();
   });
 
   it('機会があれば最初にペア・方向・利益を並べる', () => {
@@ -96,7 +96,7 @@ describe('Dashboard', () => {
     expect(within(btc).getByText('+3.04')).toBeTruthy();
     expect(within(btc).getByText('130.87')).toBeTruthy();
     expect(within(btc).getByText('-127.83')).toBeTruthy();
-    expect(within(btc).getByText('利益まであと 127.83 USDT / 1 BTC')).toBeTruthy();
+    expect(within(btc).queryByText(/利益まであと/)).toBeNull();
   });
 
   it('利益が出るペアは、数量と純利益を数字で示す', () => {
@@ -188,7 +188,6 @@ describe('Dashboard', () => {
 
   it('英語表示に切り替わる', () => {
     renderDashboard(initialized, { lang: 'en' });
-    expect(screen.getByText('No profitable trade right now')).toBeTruthy();
     expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
   });
