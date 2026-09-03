@@ -15,10 +15,10 @@
 
 body {
   margin: 0;
-  padding: 16px;
+  padding: 24px 20px 48px;
   font-family: system-ui, sans-serif;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
   background: Canvas;
   color: CanvasText;
 }
@@ -54,7 +54,7 @@ h2 {
   max-width: 1100px;
   margin: 0 auto;
   display: grid;
-  gap: 16px;
+  gap: 28px;
 }
 
 .muted {
@@ -87,25 +87,25 @@ h2 {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 8px 24px;
+  align-items: center;
+  gap: 12px 24px;
 }
 
 .boards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 540px), 1fr));
-  gap: 16px;
+  gap: 24px;
 }
 
 .card {
   min-width: 0; /* 中の表の幅に引っ張られて枠からはみ出さないようにする */
   align-content: start; /* 横に並んだ枠の高さがそろうとき、中身が縦に間延びしないようにする */
-  padding: 14px 16px;
+  padding: 22px 24px;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px color-mix(in srgb, CanvasText 8%, transparent);
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .card--profitable {
@@ -140,7 +140,7 @@ table {
 
 th,
 td {
-  padding: 5px 8px;
+  padding: 9px 10px;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
@@ -167,14 +167,14 @@ tr.detail td {
 }
 
 .status {
-  margin-top: 8px;
+  margin-top: 14px;
   font-weight: 600;
 }
 
 /* 今、機会があるかどうかの1行。機会があるときだけ緑で目立たせる */
 .summary {
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 16px 20px;
+  border-radius: 12px;
   background: color-mix(in srgb, CanvasText 6%, transparent);
   color: GrayText;
 }
@@ -190,7 +190,7 @@ tr.detail td {
 .controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
 /* 言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
@@ -271,7 +271,7 @@ tr.detail td {
 
 .verdict {
   display: grid;
-  gap: 6px;
+  gap: 12px;
 }
 
 /* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */
@@ -280,7 +280,7 @@ tr.detail td {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 12px;
+  gap: 8px 20px;
 }
 
 .figure {
