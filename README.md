@@ -229,7 +229,3 @@ URL: `/`（画面）、`/ws`（配信）、`/healthz`（生存確認と取引所
 - Yarn（Berry）は依存のインストール時スクリプトを禁止し（`enableScripts: false`）、公開から 7 日経っていないバージョンは取り込まない（`npmMinimalAgeGate`）。バージョンは完全に固定する
 - Docker のベースイメージはハッシュ（digest）で固定し、実行イメージは最小構成（シェルなし、非 root）。GitHub Actions はコミット SHA で固定する
 - Dependabot は 7 日のクールダウンを置いてから更新を提案する
-
-## ライセンス
-
-MIT License
