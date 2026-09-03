@@ -23,7 +23,8 @@ export function App() {
   const [lang, setLang] = useStoredLang();
   const wsUrl = useMemo(defaultWsUrl, []);
   const state = useArbitrageFeed(wsUrl);
-  const [tabNotification, setTabNotification] = useStoredBoolean(TAB_NOTIFICATION_KEY, false);
+  // 既定はオン。利益が出た瞬間を見逃さないため。切ったらブラウザに保存される
+  const [tabNotification, setTabNotification] = useStoredBoolean(TAB_NOTIFICATION_KEY, true);
 
   const summary = useMemo(() => titleSummary(state.pairs), [state.pairs]);
   useTitleNotification(tabNotification, summary, getDict(lang).appTitle);
