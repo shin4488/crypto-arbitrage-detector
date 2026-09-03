@@ -24,14 +24,14 @@ Binance と OKX の板を突き合わせ、手数料を引いても利益が残�
 
 ## コマンド
 
-Go はローカルに入れない前提で、`backend/Makefile` が Docker コンテナの中で go コマンドを動かす（`make test GO=go` でローカルの Go に切り替えられる）。
+Go も Node.js もローカルに入れない前提で、`backend/Makefile` とルートの `Makefile` が Docker コンテナの中でコマンドを動かす（`make test GO=go` でローカルの Go に、`make frontend-lint FRONTEND_SH="cd frontend && sh -c"` でローカルの Node.js に切り替えられる）。
 
 ```bash
 # バックエンド
 cd backend
 make test          # テスト
 make vet lint      # 静的検査（golangci-lint は Docker イメージで動く）
-make fmt           # gofmt
+make fmt           # 整形（gofmt + goimports。golangci-lint fmt を Docker で動かす）
 make run           # 開発用に起動（docker compose の backend-dev、8080）
 
 # フロントエンド（Yarn Berry を corepack 経由で使う）
@@ -42,8 +42,8 @@ yarn dev           # 開発サーバー（3000。/ws は 8080 へ中継）
 yarn check         # 型検査 + lint + テスト
 yarn build         # dist/ を生成
 
-# 全体
-make test / make lint / make up / make dev
+# 全体（フロントエンドのタスクも docker compose の frontend-dev の中で動く）
+make fmt / make test / make lint / make up / make dev
 ```
 
 ## 構成のポイント
@@ -58,6 +58,7 @@ make test / make lint / make up / make dev
 
 ## 変更したら確かめること
 
+- 整形と lint は Claude Code の hook（`.claude/settings.json` → `.claude/hooks/format-lint.sh`）が、Edit / Write の直後と応答を終えるときに Docker で自動実行する。Bash で編集したファイルは応答終了時に git の変更一覧から拾う。lint の指摘が返ってきたら直してから終える
 - バックエンド: `make fmt vet test lint`（CI では race テストと govulncheck も走る）
 - フロントエンド: `yarn check && yarn build`
 - 配信形式を変えたら、`wire` のテストとフロントの `protocol/types.ts`・`test/fixtures.ts` をそろえる

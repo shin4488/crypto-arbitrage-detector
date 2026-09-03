@@ -44,14 +44,17 @@ make dev
 
 本番相当の `docker compose up`（8080）はビルド済みの画面を配信するので、変更は反映されません。開発中は `make dev` の 3000 番を見てください。
 
-テストと静的検査:
+整形・テスト・静的検査（どれも Docker の中で動きます）:
 
 ```bash
-make test   # バックエンド（Docker 内の Go）とフロントエンドのテスト
-make lint
+make fmt    # 整形（Go: gofmt + goimports、TypeScript: Biome。安全な自動修正も適用）
+make test   # テスト
+make lint   # 静的検査（golangci-lint、型検査、Biome）
 ```
 
-細かいタスクは `backend/Makefile`（`make help` で一覧）と `frontend/package.json` の scripts にあります。ローカルに Go がある場合は `make test GO=go` のように切り替えられます。
+細かいタスクは `backend/Makefile`（`make help` で一覧）と `frontend/package.json` の scripts にあります。ローカルに Go がある場合は `make test GO=go`、ローカルの Node.js を使う場合は `make frontend-lint FRONTEND_SH="cd frontend && sh -c"` のように切り替えられます。
+
+Claude Code で作業するときは、`.claude/settings.json` に登録した hook（`.claude/hooks/format-lint.sh`）が、ファイルを編集した直後と応答を終えるときに、変更のあった側の整形と lint を Docker で実行します。lint の指摘が残っていれば Claude に差し戻されます。
 
 ## 検知のしくみ
 
