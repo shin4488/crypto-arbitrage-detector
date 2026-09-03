@@ -224,7 +224,7 @@ describe('Dashboard', () => {
     expect(screen.getByText('検知はまだありません')).toBeTruthy();
   });
 
-  it('手数料の設定を最後に添え、ⓘ で根拠と公式ページへのリンクを出す', () => {
+  it('手数料の設定を最後に添え、ⓘ で根拠と公式ページへのリンク、閲覧者には変えられないことを出す', () => {
     renderDashboard(initialized);
     expect(screen.getByText(/手数料: Binance 0.1%・OKX 0.1%（taker）/)).toBeTruthy();
     const button = screen.getByRole('button', { name: '手数料について' });
@@ -235,6 +235,11 @@ describe('Dashboard', () => {
     expect(popover).toHaveTextContent('Binance: 一般ユーザー maker 0.1% / taker 0.1%');
     expect(popover).toHaveTextContent('OKX: Lv1 maker 0.08% / taker 0.1%');
     expect(popover).toHaveTextContent('手数料はランク');
+    // 手数料率はサーバーの設定で決まり閲覧者には変えられないので、
+    // 設定ファイルを直せと案内せず、自分の手数料との差が結果にどう出るかを伝える
+    expect(popover).toHaveTextContent('画面からは変えられません');
+    expect(popover).toHaveTextContent('ご自身の手数料がこれより低ければ');
+    expect(popover).not.toHaveTextContent('takerFeeRate');
     const links = within(popover).getAllByRole('link', { name: '公式の手数料ページ' });
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
       'https://www.binance.com/en/fee/trading',
