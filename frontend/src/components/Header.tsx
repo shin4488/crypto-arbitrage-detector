@@ -32,12 +32,13 @@ export function Header({
         </div>
         <div className="controls">
           <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
-          <label title={t.tabTitleNotificationHelp}>
+          <label className="switch" title={t.tabTitleNotificationHelp}>
             <input
               type="checkbox"
               checked={tabNotification}
               onChange={(e) => onTabNotificationChange(e.target.checked)}
-            />{' '}
+            />
+            <span className="switch__track" aria-hidden="true" />
             {t.tabTitleNotification}
           </label>
         </div>

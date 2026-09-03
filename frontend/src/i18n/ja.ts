@@ -1,57 +1,49 @@
 /** 日本語の文言。キーの一覧はこのファイルが基準で、ほかの言語も同じ形にする */
 export const ja = {
   appTitle: 'Crypto Arbitrage Detector',
-  appDescription: '取引所間の価格差から、手数料込みで利益が出る売買を検知',
+  appDescription: '取引所間の価格差から、手数料を引いても利益が出る取引を見つけます',
   language: '言語',
 
-  tabTitleNotification: 'タブのタイトルで通知',
-  tabTitleNotificationHelp: '利益が出る機会がある間、ブラウザのタブのタイトルに表示します',
+  tabTitleNotification: 'タブに通知',
+  tabTitleNotificationHelp: '利益が出ている間、ブラウザのタブのタイトルにも表示します',
 
   // 接続状態（画面上部の1行）
-  statusConnecting: 'サーバーに接続しています…',
-  statusServerDisconnected: 'サーバーと切断されました。再接続しています…',
-  statusExchangeDisconnected: (names: string) =>
-    `${names} と切断中です。再接続しています（つながるまで、その取引所は評価に使いません）`,
-  statusWatching: (names: string) => `監視中（${names} に接続）`,
+  statusConnecting: 'サーバーに接続中…',
+  statusServerDisconnected: 'サーバーとの接続が切れました。再接続中…',
+  statusExchangeDisconnected: (names: string) => `${names}との接続が切れました。再接続中…`,
+  statusWatching: (names: string) => `${names}に接続中`,
 
   // 今の状態のまとめ
-  summaryNone: '今は利益の出る機会がありません',
+  summaryNone: '現在、利益の出る取引はありません',
 
   // 通貨ペアごとの枠
-  waitingForData: '取引所からの板を待っています…',
-  notEvaluable: '両方の取引所の板がそろうと評価します',
+  waitingForData: '取引所からのデータを待っています…',
+  notEvaluable: '両取引所のデータがそろい次第、判定します',
   badgeProfitable: '利益あり',
-  badgeNone: '機会なし',
+  badgeNone: '利益なし',
   badgeWaiting: 'データ待ち',
-  tagBest: 'いちばん有利',
+  tagBest: '有利な方向',
   rowSpread: '価格差',
   rowFees: '手数料',
-  rowNet: '手数料込み',
+  rowNet: '差引',
   perUnit: (base: string, quote: string) => `${quote} / 1 ${base}`,
   quantity: '数量',
   netProfit: '純利益',
-  gapToProfit: '利益まで',
-  gapValue: (amount: string) => `あと ${amount}`,
-  depthExhausted: '板の受信範囲まで計算（実際はもっと多い可能性）',
+  gapToProfit: (amount: string) => `利益まであと ${amount}`,
+  depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
 
   colExchange: '取引所',
-  colSellPrice: '売れる価格 (bid)',
-  colBuyPrice: '買える価格 (ask)',
+  colSellPrice: '売値 (bid)',
+  colBuyPrice: '買値 (ask)',
   colUpdated: '更新',
 
-  details: '数量と逆方向',
-  colSellQty: '売れる数量',
-  colBuyQty: '買える数量',
-  colLevels: '板',
-  levels: (n: number) => `${n}段`,
-  reverse: '逆方向',
-  direction: (buy: string, sell: string) => `${buy} で買い → ${sell} で売り`,
+  direction: (buy: string, sell: string) => `${buy}で買い → ${sell}で売り`,
 
   // 履歴
-  historyTitle: '機会の履歴',
+  historyTitle: '検知履歴',
   historyCount: (n: number) => `${n}件`,
-  historyEmpty: 'まだ機会は検知されていません',
-  historyHelp: '手数料込みで利益が出ていた期間ごとに1件。再起動で消えます',
+  historyEmpty: '検知はまだありません',
+  historyHelp: '利益が出ていた期間を1件として記録します（サーバーを再起動すると消えます）',
   colTime: '時刻',
   colPair: '通貨ペア',
   colTrade: '取引',
@@ -60,7 +52,7 @@ export const ja = {
   ongoing: '継続中',
 
   feeNote: (fees: string) => `手数料: ${fees}（taker）`,
-  theoreticalNote: '板のスナップショットから計算した理論値',
+  theoreticalNote: '表示している値は板の情報から計算した理論値です',
 
   ago: (ms: number) => `${formatDurationJa(ms)}前`,
   duration: (ms: number) => formatDurationJa(ms),

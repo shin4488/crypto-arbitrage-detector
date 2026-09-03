@@ -204,6 +204,57 @@ tr.detail td {
   color: Canvas;
 }
 
+/* 通知のオン・オフ。チェックボックスは見えなくしてキーボード操作だけ残し、見た目はトグルスイッチにする */
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.switch__track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, CanvasText 25%, transparent);
+  transition: background 0.15s;
+}
+
+.switch__track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: Canvas;
+  transition: transform 0.15s;
+}
+
+.switch input:checked + .switch__track {
+  background: var(--pos);
+}
+
+.switch input:checked + .switch__track::after {
+  transform: translateX(14px);
+}
+
+.switch input:focus-visible + .switch__track {
+  outline: 2px solid var(--pos);
+  outline-offset: 2px;
+}
+
 .verdict {
   display: grid;
   gap: 6px;
@@ -249,23 +300,6 @@ tr.detail td {
 .op {
   color: GrayText;
   font-size: 1.15rem;
-}
-
-details > summary {
-  cursor: pointer;
-  color: GrayText;
-  font-size: 0.85rem;
-}
-
-.details {
-  margin-top: 6px;
-  font-size: 0.9rem;
-  display: grid;
-  gap: 6px;
-}
-
-.details ul {
-  padding-left: 1.2em;
 }
 
 /* 値が変わった瞬間だけ背景を光らせて、どこが動いたか分かるようにする */

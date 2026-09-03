@@ -45,17 +45,17 @@ const withOpportunity: FeedState = {
 describe('Dashboard', () => {
   it('接続前は接続中と表示する', () => {
     renderDashboard(initialState);
-    expect(screen.getByRole('status')).toHaveTextContent('サーバーに接続しています');
+    expect(screen.getByRole('status')).toHaveTextContent('サーバーに接続中');
   });
 
   it('接続後 init 待ちはデータ待ちと表示する', () => {
     renderDashboard({ ...initialState, connection: 'connected' });
-    expect(screen.getByText('取引所からの板を待っています…')).toBeTruthy();
+    expect(screen.getByText('取引所からのデータを待っています…')).toBeTruthy();
   });
 
   it('正常時は監視中と接続先を1行で示す', () => {
     renderDashboard(initialized);
-    expect(screen.getByRole('status')).toHaveTextContent('監視中（Binance・OKX に接続）');
+    expect(screen.getByRole('status')).toHaveTextContent('Binance・OKXに接続中');
   });
 
   it('取引所と切断中はその取引所名を示す', () => {
@@ -63,18 +63,18 @@ describe('Dashboard', () => {
       ...initialized,
       exchanges: [exchangeFixture(), exchangeFixture({ id: 'okx', name: 'OKX', connected: false })],
     });
-    expect(screen.getByRole('status')).toHaveTextContent('OKX と切断中です');
+    expect(screen.getByRole('status')).toHaveTextContent('OKXとの接続が切れました');
   });
 
   it('サーバー切断中はその旨を示し、データは表示し続ける', () => {
     renderDashboard({ ...initialized, connection: 'disconnected' });
-    expect(screen.getByRole('status')).toHaveTextContent('サーバーと切断されました');
+    expect(screen.getByRole('status')).toHaveTextContent('サーバーとの接続が切れました');
     expect(screen.getByRole('region', { name: 'BTC/USDT' })).toBeTruthy();
   });
 
   it('機会が無ければ最初の1行でそう言う', () => {
     renderDashboard(initialized);
-    expect(screen.getByText('今は利益の出る機会がありません')).toBeTruthy();
+    expect(screen.getByText('現在、利益の出る取引はありません')).toBeTruthy();
   });
 
   it('機会があれば最初にペア・方向・利益を並べる', () => {
@@ -82,68 +82,61 @@ describe('Dashboard', () => {
     const summary = document.querySelector('section.summary');
     expect(summary?.className).toContain('summary--profitable');
     expect(summary).toHaveTextContent('BTC/USDT');
-    expect(summary).toHaveTextContent('OKX で買い → Binance で売り');
+    expect(summary).toHaveTextContent('OKXで買い → Binanceで売り');
     expect(summary).toHaveTextContent('+0.2397 USDT');
   });
 
-  it('機会が無いペアは、いちばん有利な方向を式で示し、利益までの距離を出す', () => {
+  it('利益が出ないペアは、有利な方向を式で示し、利益までの距離を1行で出す', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
-    expect(within(btc).getByText('機会なし')).toBeTruthy();
-    expect(within(btc).getByText('Binance で買い → OKX で売り')).toBeTruthy();
-    expect(within(btc).getByText('いちばん有利')).toBeTruthy();
-    // 価格差 +3.04 − 手数料 130.87 = 手数料込み −127.83（USDT / 1 BTC）
+    expect(within(btc).getByText('利益なし')).toBeTruthy();
+    expect(within(btc).getByText('Binanceで買い → OKXで売り')).toBeTruthy();
+    expect(within(btc).getByText('有利な方向')).toBeTruthy();
+    // 価格差 +3.04 − 手数料 130.87 = 差引 −127.83（USDT / 1 BTC）
     expect(within(btc).getByText('+3.04')).toBeTruthy();
     expect(within(btc).getByText('130.87')).toBeTruthy();
     expect(within(btc).getByText('-127.83')).toBeTruthy();
-    expect(within(btc).getByText('あと 127.83 USDT / 1 BTC')).toBeTruthy();
-    expect(within(btc).getByText('利益まで')).toBeTruthy();
+    expect(within(btc).getByText('利益まであと 127.83 USDT / 1 BTC')).toBeTruthy();
   });
 
-  it('機会があるペアは、数量と純利益を数字で示す', () => {
+  it('利益が出るペアは、数量と純利益を数字で示す', () => {
     renderDashboard(withOpportunity);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.className).toContain('card--profitable');
     expect(within(btc).getAllByText('利益あり').length).toBeGreaterThan(0);
-    expect(within(btc).getByText('OKX で買い → Binance で売り')).toBeTruthy();
-    // 数量 0.3 BTC は畳んだ中の「売れる数量」にも同じ値で出るので複数一致でよい
-    expect(within(btc).getAllByText('0.3 BTC').length).toBeGreaterThan(0);
+    expect(within(btc).getByText('OKXで買い → Binanceで売り')).toBeTruthy();
+    expect(within(btc).queryByText('有利な方向')).toBeNull();
+    expect(within(btc).getByText('0.3 BTC')).toBeTruthy();
     expect(within(btc).getByText('+0.2397 USDT')).toBeTruthy();
-    // 価格差 +1 − 手数料 0.2 = 手数料込み +0.8（価格の刻みに合わせて小数2桁）
+    // 価格差 +1 − 手数料 0.2 = 差引 +0.8（価格の刻みに合わせて小数2桁）
     expect(within(btc).getByText('+1')).toBeTruthy();
     expect(within(btc).getByText('0.2')).toBeTruthy();
     expect(within(btc).getByText('+0.8')).toBeTruthy();
-    expect(within(btc).getByText(/板の受信範囲まで計算/)).toBeTruthy();
+    expect(within(btc).getByText(/取得済みの板の範囲での値/)).toBeTruthy();
   });
 
-  it('各取引所の売れる価格・買える価格を表示する', () => {
+  it('各取引所の売値・買値を表示する', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('65,433.79')).toBeTruthy();
     expect(within(btc).getByText('65,433.8')).toBeTruthy();
     expect(within(btc).getByText('65,436.85')).toBeTruthy();
-    expect(within(btc).getByRole('columnheader', { name: '売れる価格 (bid)' })).toBeTruthy();
+    expect(within(btc).getByRole('columnheader', { name: '売値 (bid)' })).toBeTruthy();
   });
 
-  it('数量と逆方向は畳んだ中に表と1行で示し、上と重複させない', () => {
+  it('板に並ぶ数量や逆方向の値は出さない（判断に使わないため）', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
-    expect(within(btc).getByText('数量と逆方向')).toBeTruthy();
-    expect(within(btc).getByRole('columnheader', { name: '売れる数量' })).toBeTruthy();
-    expect(within(btc).getByText('0.52 BTC')).toBeTruthy();
-    expect(within(btc).getByText('20段')).toBeTruthy();
-    expect(within(btc).getByText('逆方向')).toBeTruthy();
-    expect(within(btc).getByText(/OKX で買い → Binance で売り/)).toBeTruthy();
-    expect(within(btc).getByText('-133.93')).toBeTruthy();
-    // 逆方向の内訳表は出さない（手数料の数字は主役の方向の分だけ）
-    expect(within(btc).getAllByText('130.87')).toHaveLength(1);
+    expect(btc.querySelector('details')).toBeNull();
+    expect(within(btc).queryByText('0.52 BTC')).toBeNull();
+    expect(within(btc).queryByText(/OKXで買い → Binanceで売り/)).toBeNull();
   });
 
   it('板が無いペアはデータ待ちと表示する', () => {
     renderDashboard(initialized);
     const eth = screen.getByRole('region', { name: 'ETH/USDT' });
     expect(within(eth).getByText('データ待ち')).toBeTruthy();
-    expect(within(eth).getByText('取引所からの板を待っています…')).toBeTruthy();
+    expect(within(eth).getByText('取引所からのデータを待っています…')).toBeTruthy();
   });
 
   it('履歴を新しい順に表示し、継続中を示す', () => {
@@ -160,18 +153,18 @@ describe('Dashboard', () => {
       ],
     };
     renderDashboard(state);
-    const history = screen.getByRole('region', { name: '機会の履歴' });
+    const history = screen.getByRole('region', { name: '検知履歴' });
     const rows = within(history).getAllByRole('row').slice(1); // ヘッダーを除く
     expect(rows).toHaveLength(2);
     expect(rows[0]).toHaveTextContent('+1.5 USDT');
     expect(rows[0]).toHaveTextContent('2.5秒');
     expect(rows[1]).toHaveTextContent('継続中');
-    expect(rows[1]).toHaveTextContent('OKX で買い → Binance で売り (0.3 BTC)');
+    expect(rows[1]).toHaveTextContent('OKXで買い → Binanceで売り (0.3 BTC)');
   });
 
   it('履歴が無ければその旨を表示する', () => {
     renderDashboard({ ...initialized, history: [] });
-    expect(screen.getByText('まだ機会は検知されていません')).toBeTruthy();
+    expect(screen.getByText('検知はまだありません')).toBeTruthy();
   });
 
   it('手数料の設定を最後に添える', () => {
@@ -181,7 +174,7 @@ describe('Dashboard', () => {
 
   it('タブ通知のトグルを切り替えると通知される', () => {
     const { onTabNotificationChange } = renderDashboard(initialized);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'タブのタイトルで通知' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'タブに通知' }));
     expect(onTabNotificationChange).toHaveBeenCalledWith(true);
   });
 
@@ -195,8 +188,8 @@ describe('Dashboard', () => {
 
   it('英語表示に切り替わる', () => {
     renderDashboard(initialized, { lang: 'en' });
-    expect(screen.getByText('No profitable opportunity right now')).toBeTruthy();
-    expect(screen.getByRole('status')).toHaveTextContent('Watching (connected to Binance・OKX)');
+    expect(screen.getByText('No profitable trade right now')).toBeTruthy();
+    expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
   });
 });

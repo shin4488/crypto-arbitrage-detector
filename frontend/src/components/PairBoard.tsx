@@ -19,8 +19,8 @@ const QUANTITY_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの枠。上から「今の状態 → 方向と『価格差 − 手数料 ＝ 手数料込み』の式 → 各取引所の価格」の順。
- * 数量と逆方向は普段は見なくてよいので畳んでおく。
+ * 1つの通貨ペアの枠。上から「今の状態 → 方向と『価格差 − 手数料 ＝ 差引』の式 → 各取引所の売値・買値」の順。
+ * 板に並ぶ数量や逆方向の値は売買の判断に使わないので出さない（利益が出るときの数量は式の下に出す）。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
 export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardProps) {
@@ -52,13 +52,6 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardP
       )}
 
       {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} />}
-
-      {hasQuotes && (
-        <details>
-          <summary>{t.details}</summary>
-          <Details pair={pair} exchanges={exchanges} best={best} />
-        </details>
-      )}
     </section>
   );
 });
@@ -69,7 +62,7 @@ interface VerdictProps {
   exchanges: ExchangeInfo[];
 }
 
-/** 主役の方向と、1単位あたりの「価格差 − 手数料 ＝ 手数料込み」。機会があれば数量と純利益、なければ利益までの距離 */
+/** 主役の方向と、1単位あたりの「価格差 − 手数料 ＝ 差引」。利益が出れば数量と純利益、出なければ利益までの距離 */
 function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   const t = useT();
   const digits = spreadDigits(d);
@@ -81,8 +74,13 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
             exchangeName(exchanges, d.buyExchange),
             exchangeName(exchanges, d.sellExchange),
           )}
-        </strong>{' '}
-        <span className="tag">{d.profitable ? t.badgeProfitable : t.tagBest}</span>
+        </strong>
+        {!d.profitable && (
+          <>
+            {' '}
+            <span className="tag">{t.tagBest}</span>
+          </>
+        )}
       </p>
       <Equation direction={d} pair={pair} />
       {d.profitable ? (
@@ -100,14 +98,12 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
           </Figure>
         </p>
       ) : (
-        <p className="figures">
-          <Figure label={t.gapToProfit}>
-            <Flash value={d.netSpread}>
-              {t.gapValue(
-                `${formatDecimal(d.netSpread.replace('-', ''), { maxFractionDigits: digits })} ${t.perUnit(pair.base, pair.quote)}`,
-              )}
-            </Flash>
-          </Figure>
+        <p>
+          <Flash value={d.netSpread}>
+            {t.gapToProfit(
+              `${formatDecimal(d.netSpread.replace('-', ''), { maxFractionDigits: digits })} ${t.perUnit(pair.base, pair.quote)}`,
+            )}
+          </Flash>
         </p>
       )}
       {d.profitable && d.depthExhausted && <p className="warn small">{t.depthExhausted}</p>}
@@ -115,7 +111,7 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   );
 }
 
-/** 1単位あたりの「価格差 − 手数料 ＝ 手数料込み」を式の形で並べる。文章を読まなくても数字の関係が分かる */
+/** 1単位あたりの「価格差 − 手数料 ＝ 差引」を式の形で並べる。文章を読まなくても数字の関係が分かる */
 function Equation({ direction: d, pair }: { direction: Direction; pair: PairSnapshot }) {
   const t = useT();
   const digits = spreadDigits(d);
@@ -161,7 +157,7 @@ function spreadDigits(d: Direction): number {
   return Math.max(2, fractionDigitsOf(d.bestAsk.price), fractionDigitsOf(d.bestBid.price));
 }
 
-/** 取引所ごとの「売れる価格」「買える価格」 */
+/** 取引所ごとの売値（bid）と買値（ask） */
 function QuoteTable({ pair, exchanges }: { pair: PairSnapshot; exchanges: ExchangeInfo[] }) {
   const t = useT();
   return (
@@ -208,79 +204,6 @@ function QuoteTable({ pair, exchanges }: { pair: PairSnapshot; exchanges: Exchan
           })}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-interface DetailsProps {
-  pair: PairSnapshot;
-  exchanges: ExchangeInfo[];
-  best: Direction | null;
-}
-
-/** 普段は見なくてよい情報: 最良価格での数量と板の段数、逆方向の手数料込みの値 */
-function Details({ pair, exchanges, best }: DetailsProps) {
-  const t = useT();
-  const reverse = pair.directions.find((d) => d !== best);
-  return (
-    <div className="details">
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t.colExchange}</th>
-              <th scope="col" className="num">
-                {t.colSellQty}
-              </th>
-              <th scope="col" className="num">
-                {t.colBuyQty}
-              </th>
-              <th scope="col" className="num">
-                {t.colLevels}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {exchanges.flatMap((ex) => {
-              const q = pair.quotes[ex.id];
-              if (!q) {
-                return [];
-              }
-              return [
-                <tr key={ex.id}>
-                  <th scope="row">{ex.name}</th>
-                  <td className="num">
-                    {formatDecimal(q.bid.quantity, { maxFractionDigits: QUANTITY_DIGITS })}{' '}
-                    {pair.base}
-                  </td>
-                  <td className="num">
-                    {formatDecimal(q.ask.quantity, { maxFractionDigits: QUANTITY_DIGITS })}{' '}
-                    {pair.base}
-                  </td>
-                  <td className="num">{t.levels(Math.max(q.bidLevels, q.askLevels))}</td>
-                </tr>,
-              ];
-            })}
-          </tbody>
-        </table>
-      </div>
-      {reverse && (
-        <p>
-          <span className="tag">{t.reverse}</span>{' '}
-          {t.direction(
-            exchangeName(exchanges, reverse.buyExchange),
-            exchangeName(exchanges, reverse.sellExchange),
-          )}
-          {': '}
-          <span className="neg">
-            {formatDecimal(reverse.netSpread, {
-              maxFractionDigits: spreadDigits(reverse),
-              signed: true,
-            })}
-          </span>{' '}
-          <span className="muted small">{t.perUnit(pair.base, pair.quote)}</span>
-        </p>
-      )}
     </div>
   );
 }
