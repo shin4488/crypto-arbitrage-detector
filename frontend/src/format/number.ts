@@ -187,3 +187,15 @@ function fromScaled(value: bigint, scale: number, negative: boolean): string {
   const body = fracPart ? `${intPart}.${fracPart}` : intPart;
   return negative && body !== '0' && value !== 0n ? `-${body}` : body;
 }
+
+/**
+ * 数量（Base 通貨）の表示桁数。1未満なら8桁、1000未満なら4桁、それ以上は2桁。
+ * SHIB のように1単位が非常に安い銘柄では数量が数百万になり、小数8桁まで出すと読めなくなるため。
+ */
+export function quantityFractionDigits(quantity: string): number {
+  const n = Math.abs(Number(quantity));
+  if (!Number.isFinite(n) || n < 1) {
+    return 8;
+  }
+  return n < 1000 ? 4 : 2;
+}
