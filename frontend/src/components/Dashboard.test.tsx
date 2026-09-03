@@ -64,17 +64,21 @@ describe('Dashboard', () => {
     expect(screen.getByText('取引所からのデータを待っています…')).toBeTruthy();
   });
 
-  it('正常時は監視中と接続先を1行で示す', () => {
+  it('正常時は監視中と接続先を1行で示し、印は緑（正常）にする', () => {
     renderDashboard(initialized);
-    expect(screen.getByRole('status')).toHaveTextContent('Binance・OKXに接続中');
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Binance・OKXに接続中');
+    expect(status.className).toContain('status--ok');
   });
 
-  it('取引所と切断中はその取引所名を示す', () => {
+  it('取引所と切断中はその取引所名を示し、印は赤（問題あり）にする', () => {
     renderDashboard({
       ...initialized,
       exchanges: [exchangeFixture(), exchangeFixture({ id: 'okx', name: 'OKX', connected: false })],
     });
-    expect(screen.getByRole('status')).toHaveTextContent('OKXとの接続が切れました');
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('OKXとの接続が切れました');
+    expect(status.className).toContain('status--down');
   });
 
   it('サーバー切断中はその旨を示し、データは表示し続ける', () => {
@@ -97,33 +101,33 @@ describe('Dashboard', () => {
     expect(summary).toHaveTextContent('+0.2397 USDT');
   });
 
-  it('利益が出ないペアは、取引金額ぶんの「価格差 − 手数料 ＝ 差引」を式で示す', () => {
+  it('利益が出ないペアは、取引金額ぶんの「価格差 − 手数料 ＝ 差引」を式で示す（差引に色は付けない）', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('利益なし')).toBeTruthy();
-    expect(within(btc).getByText('Binanceで買い').closest('strong')).toHaveTextContent(
-      'Binanceで買い → OKXで売り',
-    );
+    expect(within(btc).getByText('Binanceで買い → OKXで売り')).toBeTruthy();
     // 100 USDT ÷ 買値 65433.8 = 0.00152826 BTC。価格差 +3.04 × 数量 = +0.0046、手数料 0.2、差引 −0.1954
     expect(within(btc).getByText('+0.0046')).toBeTruthy();
     expect(within(btc).getByText('0.2')).toBeTruthy();
-    expect(within(btc).getByText('-0.1954')).toBeTruthy();
+    const net = within(btc).getByText('-0.1954').closest('.figure');
+    expect(net).toBeTruthy();
+    // 利益が無いのは普通の状態なので、赤などで目立たせない（色は利益と問題にだけ使う）
+    expect(net?.className).not.toContain('pos');
+    expect(net?.className).not.toContain('neg');
     expect(within(btc).getByText('0.00152826 BTC ≈ 100 USDT')).toBeTruthy();
     expect(within(btc).queryByText(/板で利益が出るのは/)).toBeNull();
   });
 
-  it('利益が出るペアは、板で利益が出る量までで計算し、その旨を添える', () => {
+  it('利益が出るペアは、板で利益が出る量までで計算し、その旨を添える（差引は緑）', () => {
     renderDashboard(withOpportunity);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.className).toContain('card--profitable');
     expect(within(btc).getByText('利益あり')).toBeTruthy();
-    expect(within(btc).getByText('OKXで買い').closest('strong')).toHaveTextContent(
-      'OKXで買い → Binanceで売り',
-    );
+    expect(within(btc).getByText('OKXで買い → Binanceで売り')).toBeTruthy();
     // 100 USDT は 1 BTC ぶんだが、板で利益が出るのは 0.3 BTC まで → サーバーの計算値
     expect(within(btc).getByText('+0.3')).toBeTruthy();
     expect(within(btc).getByText('0.0603')).toBeTruthy();
-    expect(within(btc).getByText('+0.2397')).toBeTruthy();
+    expect(within(btc).getByText('+0.2397').closest('.figure')?.className).toContain('pos');
     expect(within(btc).getByText('0.3 BTC ≈ 30 USDT')).toBeTruthy();
     expect(within(btc).getByText(/板で利益が出るのは 0.3 BTC（約 30 USDT）まで/)).toBeTruthy();
     expect(within(btc).getByText(/取得済みの板の範囲での値/)).toBeTruthy();
@@ -145,21 +149,21 @@ describe('Dashboard', () => {
     expect(onAmountChange).toHaveBeenCalledWith('500');
   });
 
-  it('各取引所の買値・売値を「買って売る」の順に並べ、有利な方向で使う価格に色を付ける', () => {
+  it('各取引所の買値・売値を「買って売る」の順に並べ、有利な方向で使う価格に「買」「売」の札を付ける', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     const headers = within(btc)
       .getAllByRole('columnheader')
       .map((th) => th.textContent);
     expect(headers).toEqual(['取引所', '買値 (ask)', '売値 (bid)', '更新']);
-    // より有利なのは Binance で買い → OKX で売り: Binance の買値と OKX の売値に色が付く
+    // より有利なのは Binance で買い → OKX で売り: Binance の買値と OKX の売値に札が付く
     const buyCell = within(btc).getByText('65,433.8').closest('td');
     const sellCell = within(btc).getByText('65,436.84').closest('td');
     expect(buyCell?.className).toContain('pick--buy');
     expect(within(buyCell as HTMLElement).getByText('買')).toBeTruthy();
     expect(sellCell?.className).toContain('pick--sell');
     expect(within(sellCell as HTMLElement).getByText('売')).toBeTruthy();
-    // 使わない価格には色を付けない
+    // 使わない価格には札を付けない
     expect(within(btc).getByText('65,433.79').closest('td')?.className).not.toContain('pick');
     expect(within(btc).getByText('65,436.85').closest('td')?.className).not.toContain('pick');
   });
@@ -169,7 +173,7 @@ describe('Dashboard', () => {
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.querySelector('details')).toBeNull();
     expect(within(btc).queryByText('0.52 BTC')).toBeNull();
-    expect(within(btc).queryByText('OKXで買い')).toBeNull();
+    expect(within(btc).queryByText(/OKXで買い/)).toBeNull();
   });
 
   it('板が無いペアはデータ待ちと表示する', () => {

@@ -40,8 +40,6 @@ export const ja = {
   colUpdated: '更新',
 
   direction: (buy: string, sell: string) => `${buy}で買い → ${sell}で売り`,
-  buyOn: (exchange: string) => `${exchange}で買い`,
-  sellOn: (exchange: string) => `${exchange}で売り`,
   pickBuy: '買',
   pickSell: '売',
 

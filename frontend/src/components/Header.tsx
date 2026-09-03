@@ -24,8 +24,8 @@ export function Header({ connection, exchanges, lang, onLangChange }: HeaderProp
         </div>
       </div>
       <div className="controls">
-        <span className={`status ${status.ok ? 'pos' : 'warn'}`} role="status">
-          ● {status.text}
+        <span className={`status ${status.ok ? 'status--ok' : 'status--down'}`} role="status">
+          {status.text}
         </span>
         <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
       </div>

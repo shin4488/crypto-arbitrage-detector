@@ -1,6 +1,10 @@
 /*
- * 配色は OS のライト／ダーク設定に追従させる（システムカラーと light-dark() を使う）。
- * 独自に決める色は「利益＝緑」「損失・切断＝赤」「注意＝黄」「変化の目印」だけ。
+ * 配色は、地の色（Canvas / CanvasText / GrayText のシステムカラー）と、意味を持つ2色だけにする。
+ *   緑: 利益が出ている（差引がプラス、「利益あり」の札、まとめの帯、履歴の利益）
+ *   赤: 問題がある（接続が切れた、取引金額の入力が不正）
+ * 買い・売り・選択中・変化の目印などは色ではなく、太さ・枠・地の濃淡で示す。
+ * 色が多いとどこを見ればよいか分からなくなるため、「利益」と「問題」以外に色を使わない。
+ * ライト／ダークは color-scheme で決まり、システムカラーと light-dark() がそれに追従する。
  * 数字は等幅で右揃えにして、桁を目で比べやすくする。
  */
 :root {
@@ -8,13 +12,10 @@
   --pos: light-dark(#137a3a, #5ad07f);
   --pos-bg: light-dark(#e6f6ec, #15301f);
   --neg: light-dark(#b42318, #ff7b70);
-  --buy: light-dark(#1d4ed8, #8ab4ff);
-  --buy-bg: light-dark(#dbeafe, #172a4d);
-  --sell: light-dark(#b45309, #ffc46b);
-  --sell-bg: light-dark(#fef3c7, #3f2f0a);
-  --warn: light-dark(#7a4b00, #ffd27a);
   --line: color-mix(in srgb, CanvasText 15%, transparent);
-  --flash: light-dark(rgb(255 213 0 / 45%), rgb(255 213 0 / 30%));
+  /* 薄い地。選択中のチップや有利な価格のセルに使う */
+  --tint: color-mix(in srgb, CanvasText 7%, transparent);
+  --flash: color-mix(in srgb, CanvasText 14%, transparent);
 }
 
 body {
@@ -71,22 +72,6 @@ h2 {
 
 .pos {
   color: var(--pos);
-}
-
-.neg {
-  color: var(--neg);
-}
-
-.buy {
-  color: var(--buy);
-}
-
-.sell {
-  color: var(--sell);
-}
-
-.warn {
-  color: var(--warn);
 }
 
 .num {
@@ -147,13 +132,19 @@ h2 {
   padding: 2px 6px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--buy) 12%, transparent);
-  color: var(--buy);
+  background: none;
+  color: GrayText;
   font: inherit;
   font-size: 0.9rem;
   letter-spacing: -0.15em;
   line-height: 1;
   cursor: grab;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  color: CanvasText;
+  background: var(--tint);
 }
 
 .drag-handle:active {
@@ -165,7 +156,7 @@ h2 {
 }
 
 .card.is-drop-target {
-  outline: 2px solid var(--buy);
+  outline: 2px solid CanvasText;
   outline-offset: 2px;
 }
 
@@ -191,7 +182,7 @@ h2 {
 .icon-button:focus-visible {
   border-color: var(--line);
   color: CanvasText;
-  background: color-mix(in srgb, CanvasText 8%, transparent);
+  background: var(--tint);
 }
 
 .icon-button:disabled {
@@ -212,19 +203,13 @@ h2 {
   overflow-x: auto;
 }
 
-/* 有利な方向で使う価格のセル。買いは青、売りは橙 */
+/*
+ * 有利な方向で使う2つの価格（買う取引所の買値、売る取引所の売値）のセル。
+ * 薄い地と太字にして「買」「売」の札を添える。買いと売りを色で分けると画面の色が増えるので、札の文字で区別する
+ */
 td.pick {
   font-weight: 600;
-}
-
-td.pick--buy {
-  background: var(--buy-bg);
-  color: var(--buy);
-}
-
-td.pick--sell {
-  background: var(--sell-bg);
-  color: var(--sell);
+  background: var(--tint);
 }
 
 .pick__tag {
@@ -233,15 +218,8 @@ td.pick--sell {
   padding: 0 6px;
   border-radius: 4px;
   font-size: 0.75rem;
+  background: CanvasText;
   color: Canvas;
-}
-
-td.pick--buy .pick__tag {
-  background: var(--buy);
-}
-
-td.pick--sell .pick__tag {
-  background: var(--sell);
 }
 
 table {
@@ -267,26 +245,34 @@ tbody th {
   white-space: nowrap;
 }
 
-tr.is-profitable > * {
-  background: var(--pos-bg);
-}
-
-tr.detail td {
-  padding-top: 0;
-  font-size: 0.85rem;
-  color: GrayText;
-}
-
+/* 接続の状態。文字の前に丸を置き、正常なら緑、切れていれば赤にする（文字自体は地の色のまま） */
 .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
 }
 
-/* 今、機会があるかどうかの1行。機会があるときだけ緑で目立たせる */
+.status::before {
+  content: "";
+  flex: none;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+}
+
+.status--ok::before {
+  background: var(--pos);
+}
+
+.status--down::before {
+  background: var(--neg);
+}
+
+/* 利益が出る取引の一覧。画面の最初に緑の帯で出す */
 .summary {
   padding: 16px 20px;
   border-radius: 12px;
-  background: color-mix(in srgb, CanvasText 6%, transparent);
-  color: GrayText;
 }
 
 .summary--profitable {
@@ -343,7 +329,7 @@ tr.detail td {
   gap: 16px;
 }
 
-/* 表示するペアの切り替え。選んでいるペアだけ買い色の青で塗る（画面の他の青と同じ意味合いの「選択中」） */
+/* 表示するペアの切り替え。選んでいるペアだけ枠を濃くして太字にする */
 .pair-filter {
   display: flex;
   flex-wrap: wrap;
@@ -374,9 +360,9 @@ tr.detail td {
 }
 
 .chip[aria-pressed="true"] {
-  border-color: var(--buy);
-  background: var(--buy-bg);
-  color: var(--buy);
+  border-color: CanvasText;
+  background: var(--tint);
+  color: CanvasText;
   font-weight: 600;
 }
 
@@ -451,7 +437,7 @@ tr.detail td {
   font-size: 1.3rem;
 }
 
-/* 値が変わった瞬間だけ背景を光らせて、どこが動いたか分かるようにする */
+/* 値が変わった瞬間だけ背景を薄く濃くして、どこが動いたか分かるようにする。更新は秒間何十回もあるので色は付けない */
 @keyframes flash {
   from {
     background: var(--flash);
@@ -491,7 +477,7 @@ tr.detail td {
 
 .info__button:hover,
 .info__button[aria-expanded="true"] {
-  background: color-mix(in srgb, CanvasText 8%, transparent);
+  background: var(--tint);
 }
 
 .info__icon {
@@ -500,8 +486,7 @@ tr.detail td {
   width: 1.4em;
   height: 1.4em;
   border-radius: 50%;
-  background: var(--buy);
-  color: Canvas;
+  background: var(--line);
   font-weight: 700;
   font-style: italic;
   font-family: Georgia, serif;
