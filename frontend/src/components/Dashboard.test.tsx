@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { Theme } from '../hooks/useStoredTheme';
 import { type Lang, LangContext } from '../i18n';
 import { emptyLayout, type PairLayout } from '../state/layout';
 import { type FeedState, initialState, reducer } from '../state/reducer';
@@ -16,8 +17,10 @@ function renderDashboard(
   state: FeedState,
   {
     lang = 'ja' as Lang,
+    theme = 'light' as Theme,
     amount = '100',
     onLangChange = vi.fn(),
+    onThemeChange = vi.fn(),
     onAmountChange = vi.fn(),
     layout = emptyLayout as PairLayout,
     onLayoutAction = vi.fn(),
@@ -29,6 +32,8 @@ function renderDashboard(
         state={state}
         lang={lang}
         onLangChange={onLangChange}
+        theme={theme}
+        onThemeChange={onThemeChange}
         amountInput={amount}
         amount={amount}
         onAmountChange={onAmountChange}
@@ -37,7 +42,7 @@ function renderDashboard(
       />
     </LangContext.Provider>,
   );
-  return { onLangChange, onAmountChange, onLayoutAction };
+  return { onLangChange, onThemeChange, onAmountChange, onLayoutAction };
 }
 
 const initialized = reducer(reducer(initialState, { type: 'connection', status: 'connected' }), {
@@ -243,6 +248,21 @@ describe('Dashboard', () => {
     renderDashboard(initialized, { lang: 'en' });
     expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Color scheme' })).toBeTruthy();
+  });
+
+  it('配色（ライト／ダーク）を選ぶと通知され、選択中の配色が押された状態になる', () => {
+    const { onThemeChange } = renderDashboard(initialized, { theme: 'dark' });
+    const group = screen.getByRole('group', { name: '配色' });
+    expect(within(group).getByRole('button', { name: 'ダーク', pressed: true })).toBeTruthy();
+    fireEvent.click(within(group).getByRole('button', { name: 'ライト', pressed: false }));
+    expect(onThemeChange).toHaveBeenCalledWith('light');
+  });
+
+  it('配色の切り替えは接続前から使える', () => {
+    renderDashboard(initialState, { theme: 'light' });
+    const group = screen.getByRole('group', { name: '配色' });
+    expect(within(group).getByRole('button', { name: 'ライト', pressed: true })).toBeTruthy();
   });
   it('取っ手のドラッグ＆ドロップで並び替え、キーボードの ↑↓ でも動かせる', () => {
     const { onLayoutAction } = renderDashboard(initialized);

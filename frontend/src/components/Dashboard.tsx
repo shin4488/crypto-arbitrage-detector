@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import type { Theme } from '../hooks/useStoredTheme';
 import { type Lang, useT } from '../i18n';
 import { type LayoutAction, orderedPairs, type PairLayout, visiblePairs } from '../state/layout';
 import type { FeedState } from '../state/reducer';
@@ -14,6 +15,8 @@ interface DashboardProps {
   state: FeedState;
   lang: Lang;
   onLangChange: (lang: Lang) => void;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
   /** 取引金額の入力欄の文字列（不正な値もそのまま） */
   amountInput: string;
   /** 計算に使う取引金額（正の数に直したもの） */
@@ -31,6 +34,8 @@ export function Dashboard({
   state,
   lang,
   onLangChange,
+  theme,
+  onThemeChange,
   amountInput,
   amount,
   onAmountChange,
@@ -69,6 +74,8 @@ export function Dashboard({
         exchanges={state.exchanges}
         lang={lang}
         onLangChange={onLangChange}
+        theme={theme}
+        onThemeChange={onThemeChange}
       />
       {state.initialized ? (
         <>

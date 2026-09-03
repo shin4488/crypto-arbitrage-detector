@@ -8,7 +8,7 @@
  * 数字は等幅で右揃えにして、桁を目で比べやすくする。
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light dark; /* 画面で選ぶ前（描画直後）は OS の設定に従う */
   --pos: light-dark(#137a3a, #5ad07f);
   --pos-bg: light-dark(#e6f6ec, #15301f);
   --neg: light-dark(#b42318, #ff7b70);
@@ -16,6 +16,15 @@
   /* 薄い地。選択中のチップや有利な価格のセルに使う */
   --tint: color-mix(in srgb, CanvasText 7%, transparent);
   --flash: color-mix(in srgb, CanvasText 14%, transparent);
+}
+
+/* 画面で選んだ配色。useStoredTheme が html の data-theme に入れる */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
@@ -375,7 +384,7 @@ tbody th {
   cursor: default;
 }
 
-/* 言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
+/* 配色と言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
 .segmented {
   display: inline-flex;
   margin: 0;

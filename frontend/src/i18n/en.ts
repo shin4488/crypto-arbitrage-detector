@@ -4,6 +4,9 @@ export const en: Dict = {
   appTitle: 'Crypto Arbitrage Detector',
   appDescription: 'Finds cross-exchange trades that are still profitable after fees',
   language: 'Language',
+  theme: 'Color scheme',
+  themeLight: 'Light',
+  themeDark: 'Dark',
 
   statusConnecting: 'Connecting to the server…',
   statusServerDisconnected: 'Lost connection to the server. Reconnecting…',

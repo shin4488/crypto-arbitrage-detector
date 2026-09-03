@@ -3,6 +3,7 @@ import { Dashboard } from './components/Dashboard';
 import { useArbitrageFeed } from './hooks/useArbitrageFeed';
 import { usePairLayout } from './hooks/usePairLayout';
 import { useStoredLang } from './hooks/useStoredLang';
+import { useStoredTheme } from './hooks/useStoredTheme';
 import { useTitleNotification } from './hooks/useTitleNotification';
 import { getDict, LangContext } from './i18n';
 import { titleSummary } from './state/selectors';
@@ -20,6 +21,7 @@ function defaultWsUrl(): string {
 
 export function App() {
   const [lang, setLang] = useStoredLang();
+  const [theme, setTheme] = useStoredTheme();
   const wsUrl = useMemo(defaultWsUrl, []);
   const state = useArbitrageFeed(wsUrl);
   // 取引金額（Quote 通貨建て）。開くたびに既定値から始める。入力欄の文字列を持ち、計算には正の数に直したものを使う
@@ -42,6 +44,8 @@ export function App() {
         state={state}
         lang={lang}
         onLangChange={setLang}
+        theme={theme}
+        onThemeChange={setTheme}
         amountInput={amountInput}
         amount={amount}
         onAmountChange={setAmountInput}
