@@ -18,6 +18,7 @@ COPY frontend/package.json frontend/yarn.lock frontend/.yarnrc.yml ./
 RUN --mount=type=cache,target=/cache \
     yarn install --immutable
 COPY frontend/index.html frontend/tsconfig.json frontend/vite.config.ts ./
+COPY frontend/public ./public
 COPY frontend/src ./src
 RUN yarn build
 
