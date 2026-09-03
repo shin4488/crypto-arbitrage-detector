@@ -7,7 +7,7 @@
 # RUN --mount=type=cache は BuildKit のキャッシュで、依存の取得やコンパイル結果を次回のビルドに引き継ぐ。
 
 # --- フロントエンドのビルド ---
-FROM node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf AS frontend
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS frontend
 WORKDIR /app/frontend
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     COREPACK_HOME=/cache/corepack \
