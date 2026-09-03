@@ -82,7 +82,7 @@ export const PairBoard = memo(function PairBoard({
           onMouseUp={() => setArmed(false)}
           onKeyDown={handleKey}
         >
-          ⋮⋮
+          <GripIcon />
         </button>
         <h2>{pair.pair}</h2>
         <span className={badge.className}>{badge.text}</span>
@@ -111,7 +111,24 @@ export const PairBoard = memo(function PairBoard({
   );
 });
 
-/** 「隠す」の目のアイコン。アイコン集を依存に足すほどではないので、この1つだけ手で描いている */
+/**
+ * 取っ手の6つの点。文字の「⋮⋮」はフォント次第で細く小さくなり見つけにくかったので、点を描いて大きさをそろえる。
+ * アイコン集を依存に足すほどではないので手で描いている（目のアイコンも同じ）
+ */
+function GripIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="currentColor">
+      <circle cx="9" cy="5" r="2.2" />
+      <circle cx="15" cy="5" r="2.2" />
+      <circle cx="9" cy="12" r="2.2" />
+      <circle cx="15" cy="12" r="2.2" />
+      <circle cx="9" cy="19" r="2.2" />
+      <circle cx="15" cy="19" r="2.2" />
+    </svg>
+  );
+}
+
+/** 「隠す」の目のアイコン */
 function EyeOffIcon() {
   return (
     <svg

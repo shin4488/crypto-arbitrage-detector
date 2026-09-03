@@ -161,18 +161,28 @@ h2 {
   margin-right: auto;
 }
 
-/* ドラッグ用の取っ手。ここをつかむとカードを動かせる */
+/* ドラッグ用の取っ手。ここをつかむとカードを動かせる。見つけやすいよう、青い枠と地の中に6つの点を描く */
 .drag-handle {
-  padding: 2px 6px;
-  border: 1px solid var(--line);
+  display: inline-grid;
+  place-items: center;
+  width: 2em;
+  height: 2em;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--buy) 55%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--buy) 12%, transparent);
+  background: color-mix(in srgb, var(--buy) 16%, transparent);
   color: var(--buy);
-  font: inherit;
-  font-size: 0.9rem;
-  letter-spacing: -0.15em;
-  line-height: 1;
   cursor: grab;
+}
+
+.drag-handle svg {
+  display: block;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  border-color: var(--buy);
+  background: color-mix(in srgb, var(--buy) 30%, transparent);
 }
 
 .drag-handle:active {
