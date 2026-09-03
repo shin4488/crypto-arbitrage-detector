@@ -185,9 +185,11 @@ describe('Dashboard', () => {
     expect(onTabNotificationChange).toHaveBeenCalledWith(true);
   });
 
-  it('言語を選ぶと通知される', () => {
+  it('言語を選ぶと通知され、選択中の言語が押された状態になる', () => {
     const { onLangChange } = renderDashboard(initialized);
-    fireEvent.change(screen.getByRole('combobox', { name: '言語' }), { target: { value: 'en' } });
+    const group = screen.getByRole('group', { name: '言語' });
+    expect(within(group).getByRole('button', { name: '日本語', pressed: true })).toBeTruthy();
+    fireEvent.click(within(group).getByRole('button', { name: 'English', pressed: false }));
     expect(onLangChange).toHaveBeenCalledWith('en');
   });
 
@@ -195,7 +197,7 @@ describe('Dashboard', () => {
     renderDashboard(initialized, { lang: 'en' });
     expect(screen.getByText('No profitable opportunity right now')).toBeTruthy();
     expect(screen.getByRole('status')).toHaveTextContent('Watching (connected to Binance・OKX)');
-    expect(screen.getByRole('combobox', { name: 'Language' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
   });
 });
 

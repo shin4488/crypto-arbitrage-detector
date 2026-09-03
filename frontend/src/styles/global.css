@@ -179,6 +179,31 @@ tr.detail td {
   gap: 12px;
 }
 
+/* 言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
+.segmented {
+  display: inline-flex;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.segmented button {
+  padding: 2px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: GrayText;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: CanvasText;
+  color: Canvas;
+}
+
 .verdict {
   display: grid;
   gap: 6px;

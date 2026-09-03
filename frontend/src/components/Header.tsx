@@ -31,14 +31,7 @@ export function Header({
           <p className="muted">{t.appDescription}</p>
         </div>
         <div className="controls">
-          <select
-            aria-label={t.language}
-            value={lang}
-            onChange={(e) => onLangChange(e.target.value as Lang)}
-          >
-            <option value="ja">日本語</option>
-            <option value="en">English</option>
-          </select>
+          <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
           <label title={t.tabTitleNotificationHelp}>
             <input
               type="checkbox"
@@ -73,4 +66,36 @@ function connectionSentence(
     return { ok: false, text: t.statusExchangeDisconnected(down.join('・')) };
   }
   return { ok: true, text: t.statusWatching(exchanges.map((ex) => ex.name).join('・')) };
+}
+
+const LANGS: { value: Lang; label: string }[] = [
+  { value: 'ja', label: '日本語' },
+  { value: 'en', label: 'English' },
+];
+
+/** 言語の切り替え。選択肢を並べて選択中を反転させる（セグメントコントロール） */
+function LangSwitch({
+  lang,
+  onChange,
+  label,
+}: {
+  lang: Lang;
+  onChange: (lang: Lang) => void;
+  label: string;
+}) {
+  return (
+    <fieldset className="segmented" aria-label={label}>
+      {LANGS.map((item) => (
+        <button
+          key={item.value}
+          type="button"
+          lang={item.value}
+          aria-pressed={lang === item.value}
+          onClick={() => onChange(item.value)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </fieldset>
+  );
 }
