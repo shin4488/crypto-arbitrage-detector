@@ -18,6 +18,10 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # Node の型定義は動かしている Node のメジャーに合わせて手動で上げる
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
@@ -32,3 +36,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    ignore:
+      # Node は LTS に合わせて手動で上げる（25 以降は corepack が同梱されず、そのままでは動かない）
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
