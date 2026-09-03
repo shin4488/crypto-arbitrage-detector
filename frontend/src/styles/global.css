@@ -87,6 +87,7 @@ h2 {
 
 .card {
   min-width: 0; /* 中の表の幅に引っ張られて枠からはみ出さないようにする */
+  align-content: start; /* 横に並んだ枠の高さがそろうとき、中身が縦に間延びしないようにする */
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
