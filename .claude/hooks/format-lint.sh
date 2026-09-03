@@ -1,78 +1,33 @@
 #!/bin/sh
-# Claude Code の hook。Claude がファイルを編集したあと（PostToolUse）と応答を終えるとき（Stop）に、
-# 変更のあった側（backend / frontend）の整形と lint を Docker の中で実行する。
+# Claude Code の hook。Claude がファイルを編集した直後（PostToolUse）と応答を終えるとき（Stop）に、
+# 変更のあった側（backend / frontend）の整形と lint を make 経由で Docker の中で実行する。
+# 整形はそのまま適用し、lint の指摘が残ったら終了コード 2 で出力を Claude に返して修正させる。
 #
-# - 整形と安全な自動修正はそのまま適用する
-# - lint の指摘が残ったら終了コード 2 で内容を Claude に返し、修正させる
-# - Docker が動いていなければ何もしない（環境の都合で作業を止めない）
-#
-# 入力は標準入力の JSON。jq に依存しないよう、必要なキーだけ grep と sed で取り出す。
-set -u
+# 標準入力の JSON は jq に頼らず grep で見る。編集したファイル（file_path）があればその側だけ、
+# なければ（Stop のとき）git の変更一覧から判断する。
 
-root="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
-input="$(cat)"
+cd "$CLAUDE_PROJECT_DIR" || exit 1
+input=$(cat)
 
-# キー $1 の値（文字列か真偽値）を取り出す。値に " を含まない前提で、パスと真偽値にしか使わない
-json_value() {
-  printf '%s' "$input" \
-    | grep -oE "\"$1\"[[:space:]]*:[[:space:]]*(\"[^\"]*\"|true|false)" \
-    | head -n 1 \
-    | sed -E 's/^"[^"]*"[[:space:]]*:[[:space:]]*"?//; s/"$//'
-}
+# この hook が止めた応答の続きでは再度止めない（無限ループの防止）
+printf '%s' "$input" | grep -q '"stop_hook_active" *: *true' && exit 0
 
-case "$(json_value hook_event_name)" in
-  PostToolUse)
-    # Edit / Write / MultiEdit が触ったファイル
-    paths="$(json_value file_path)"
-    ;;
-  Stop)
-    # この hook が止めた応答の続きでは再度止めない（無限ループの防止）
-    [ "$(json_value stop_hook_active)" = "true" ] && exit 0
-    # Bash で編集した場合も拾えるよう、git の変更一覧（変更・追加・未追跡）から判断する
-    paths="$(git -C "$root" status --porcelain --untracked-files=all | cut -c4-)"
-    ;;
-  *)
-    exit 0
-    ;;
-esac
-
-[ -z "$paths" ] && exit 0
-
-backend=0
-frontend=0
-IFS='
-'
-for p in $paths; do
-  p="${p#"$root"/}"
-  case "$p" in
-    backend/*.go | backend/go.mod | backend/go.sum | backend/.golangci.yml) backend=1 ;;
-    frontend/node_modules/* | frontend/dist/*) ;;
-    frontend/*) frontend=1 ;;
-  esac
-done
-unset IFS
-
-[ "$backend" = 0 ] && [ "$frontend" = 0 ] && exit 0
-
-if ! docker info >/dev/null 2>&1; then
-  echo "format-lint hook: Docker が動いていないため整形と lint を省略しました" >&2
-  exit 0
+file=$(printf '%s' "$input" | grep -o '"file_path" *: *"[^"]*"' | head -n 1 | cut -d '"' -f 4)
+if [ -n "$file" ]; then
+  changed=${file#"$PWD"/}
+else
+  changed=$(git status --porcelain --untracked-files=all | cut -c 4-)
 fi
 
-log="$(mktemp)"
-trap 'rm -f "$log"' EXIT
-failed=""
-if [ "$backend" = 1 ]; then
-  make -s -C "$root/backend" fmt lint >>"$log" 2>&1 || failed="$failed backend"
-fi
-if [ "$frontend" = 1 ]; then
-  make -s -C "$root" frontend-fmt >>"$log" 2>&1 || failed="$failed frontend"
-fi
+# Docker が動いていなければ何もしない（環境の都合で作業を止めない）
+docker info >/dev/null 2>&1 || exit 0
 
-if [ -n "$failed" ]; then
-  {
-    echo "lint の指摘があります（${failed# }）。以下を修正してください:"
-    cat "$log"
-  } >&2
-  exit 2
+status=0
+if printf '%s\n' "$changed" | grep -q '^backend/'; then
+  make -s -C backend fmt lint >&2 || status=2
 fi
+if printf '%s\n' "$changed" | grep -q '^frontend/'; then
+  make -s frontend-fmt >&2 || status=2
+fi
+[ "$status" = 0 ] || echo "上の lint の指摘を修正してください" >&2
+exit "$status"
