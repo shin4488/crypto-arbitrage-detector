@@ -56,7 +56,7 @@ make lint
 ### 対象
 
 - 取引所: Binance（Partial Book Depth、20段・100ms）と OKX（books5 チャネル、5段・変化があったとき100ms）
-- 通貨ペア: BTC/USDT と ETH/USDT。設定で増やせます
+- 通貨ペア: BTC/USDT、ETH/USDT、XRP/USDT、SHIB/USDT、DOGE/USDT。設定で増やせます
 
 ### 利益の計算
 
@@ -95,7 +95,7 @@ make lint
 | `exchanges[].name` | 取引所ごとの既定名 | 表示名 |
 | `exchanges[].takerFeeRate` | `"0.001"` | taker 手数料率（0.001 = 0.1%） |
 | `exchanges[].wsUrl` | 取引所ごとの既定 URL | 接続先の上書き。テストやプロキシ用 |
-| `pairs` | `["BTC/USDT", "ETH/USDT"]` | 通貨ペア（`BASE/QUOTE` 形式） |
+| `pairs` | BTC, ETH, XRP, SHIB, DOGE の各 /USDT | 通貨ペア（`BASE/QUOTE` 形式） |
 | `history.limit` | `200` | 保持する履歴の件数 |
 | `log.level` | `"info"` | `debug` / `info` / `warn` / `error` |
 | `log.format` | `"text"` | `text` / `json` |

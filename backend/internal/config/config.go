@@ -77,7 +77,7 @@ func Default() Config {
 			{ID: "binance", Name: "Binance", TakerFeeRate: decimal.RequireFromString("0.001")},
 			{ID: "okx", Name: "OKX", TakerFeeRate: decimal.RequireFromString("0.001")},
 		},
-		Pairs:   []string{"BTC/USDT", "ETH/USDT"},
+		Pairs:   []string{"BTC/USDT", "ETH/USDT", "XRP/USDT", "SHIB/USDT", "DOGE/USDT"},
 		History: HistoryConfig{Limit: 200},
 		Log:     LogConfig{Level: "info", Format: "text"},
 	}
