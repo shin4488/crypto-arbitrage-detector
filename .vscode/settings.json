@@ -22,22 +22,7 @@
     "**/build": true,
     "**/.git": true
   },
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[css]": {
+  "[javascript][typescript][typescriptreact][json][jsonc][css]": {
     "editor.defaultFormatter": "biomejs.biome"
   }
 }
