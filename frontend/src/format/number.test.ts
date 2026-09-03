@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  divideDecimals,
   formatDecimal,
   formatPercent,
   fractionDigitsOf,
+  multiplyDecimals,
   shiftDecimalPoint,
   signOf,
   subtractDecimals,
@@ -106,5 +108,34 @@ describe('subtractDecimals', () => {
 
   it('数値でなければ NaN', () => {
     expect(subtractDecimals('x', '1')).toBe('NaN');
+  });
+});
+
+describe('multiplyDecimals', () => {
+  it.each([
+    ['3.04', '0.00152826', '0.0046459104'],
+    ['100', '0.001', '0.1'],
+    ['-127.83', '0.00152826', '-0.1953574758'],
+    ['0', '5', '0'],
+    ['1.5', '2', '3'],
+  ])('%s × %s = %s', (a, b, want) => {
+    expect(multiplyDecimals(a, b)).toBe(want);
+  });
+});
+
+describe('divideDecimals', () => {
+  it.each([
+    ['100', '65433.8', 8, '0.00152826'],
+    ['100', '100', 8, '1'],
+    ['1', '3', 4, '0.3333'],
+    ['-10', '4', 8, '-2.5'],
+    ['0.2397', '0.3', 8, '0.799'],
+  ])('%s ÷ %s（%d桁）= %s', (a, b, scale, want) => {
+    expect(divideDecimals(a, b, scale)).toBe(want);
+  });
+
+  it('ゼロ除算や数値でない文字列は NaN', () => {
+    expect(divideDecimals('1', '0')).toBe('NaN');
+    expect(divideDecimals('x', '1')).toBe('NaN');
   });
 });

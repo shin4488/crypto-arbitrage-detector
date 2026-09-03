@@ -237,6 +237,30 @@ tr.detail td {
   gap: 20px;
 }
 
+/* 取引金額の入力欄 */
+.amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.amount input {
+  width: 6.5em;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: Canvas;
+  color: CanvasText;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.amount input[aria-invalid="true"] {
+  border-color: var(--neg);
+}
+
 /* 言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
 .segmented {
   display: inline-flex;

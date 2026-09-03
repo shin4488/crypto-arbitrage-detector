@@ -5,13 +5,8 @@ import {
   pairFixture,
   profitableDirectionFixture,
 } from '../test/fixtures';
-import {
-  bestDirection,
-  exchangeName,
-  feePerUnit,
-  profitableDirection,
-  titleSummary,
-} from './selectors';
+import { bestDirection, exchangeName, profitableDirection, titleSummary } from './selectors';
+import { feePerUnit } from './trade';
 
 describe('selectors', () => {
   it('profitableDirection は利益の出る方向を返す', () => {
@@ -43,8 +38,8 @@ describe('selectors', () => {
     expect(feePerUnit(profitableDirectionFixture())).toBe('0.201');
   });
 
-  it('titleSummary は機会のあるペアだけを短く要約する', () => {
-    expect(titleSummary([pairFixture()])).toBeNull();
+  it('titleSummary は機会のあるペアだけを、取引金額ぶんの利益で短く要約する', () => {
+    expect(titleSummary([pairFixture()], '100')).toBeNull();
     const pairs = [
       pairFixture({ directions: [profitableDirectionFixture({ netProfit: '1.234' })] }),
       pairFixture({ pair: 'ETH/USDT', base: 'ETH' }),
@@ -54,7 +49,10 @@ describe('selectors', () => {
         directions: [profitableDirectionFixture({ netProfit: '0.45' })],
       }),
     ];
-    expect(titleSummary(pairs)).toBe('BTC +1.23 / SOL +0.45');
+    // 100 USDT は板で利益が出る量（0.3 BTC ≈ 30 USDT）を超えるので、サーバーの純利益がそのまま出る
+    expect(titleSummary(pairs, '100')).toBe('BTC +1.23 / SOL +0.45');
+    // 20 USDT なら 0.2 BTC ぶん: 0.799 × 0.2 = 0.1598
+    expect(titleSummary(pairs, '20')).toBe('BTC +0.16 / SOL +0.16');
   });
 
   it('exchangeName は表示名を返し、未知ならIDのまま', () => {

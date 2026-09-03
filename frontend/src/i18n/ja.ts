@@ -22,9 +22,11 @@ export const ja = {
   rowSpread: '価格差',
   rowFees: '手数料',
   rowNet: '差引',
-  perUnit: (base: string, quote: string) => `${quote} / 1 ${base}`,
-  quantity: '数量',
-  netProfit: '純利益',
+  tradeAmount: '取引金額',
+  forAmount: (quantity: string, base: string, cost: string, quote: string) =>
+    `${quantity} ${base} ≈ ${cost} ${quote}`,
+  capped: (quantity: string, base: string, cost: string, quote: string) =>
+    `板で利益が出るのは ${quantity} ${base}（約 ${cost} ${quote}）まで`,
   depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
 
   colExchange: '取引所',

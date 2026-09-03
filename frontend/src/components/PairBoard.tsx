@@ -1,14 +1,17 @@
 import { memo, type ReactNode } from 'react';
-import { formatDecimal, fractionDigitsOf } from '../format/number';
+import { formatDecimal, multiplyDecimals } from '../format/number';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
-import { bestDirection, exchangeName, feePerUnit } from '../state/selectors';
+import { bestDirection, exchangeName } from '../state/selectors';
+import { planForAmount } from '../state/trade';
 import { Age } from './Age';
 import { Flash } from './Flash';
 
 interface PairBoardProps {
   pair: PairSnapshot;
   exchanges: ExchangeInfo[];
+  /** 取引金額（Quote 通貨建て、正の数） */
+  amount: string;
 }
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
@@ -19,11 +22,11 @@ const QUANTITY_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの枠。上から「今の状態 → 方向と『価格差 − 手数料 ＝ 差引』の式 → 各取引所の売値・買値」の順。
- * 板に並ぶ数量や逆方向の値は売買の判断に使わないので出さない（利益が出るときの数量は式の下に出す）。
+ * 1つの通貨ペアの枠。上から「今の状態 → 方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式 → 各取引所の買値・売値」の順。
+ * 板に並ぶ数量や逆方向の値は売買の判断に使わないので出さない。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
-export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardProps) {
+export const PairBoard = memo(function PairBoard({ pair, exchanges, amount }: PairBoardProps) {
   const t = useT();
   const best = bestDirection(pair);
   const hasQuotes = Object.keys(pair.quotes).length > 0;
@@ -48,7 +51,7 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges }: PairBoardP
       ) : best === null ? (
         <p className="muted">{t.notEvaluable}</p>
       ) : (
-        <Verdict direction={best} pair={pair} exchanges={exchanges} />
+        <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
       )}
 
       {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
@@ -60,11 +63,20 @@ interface VerdictProps {
   direction: Direction;
   pair: PairSnapshot;
   exchanges: ExchangeInfo[];
+  amount: string;
 }
 
-/** 主役の方向と、1単位あたりの「価格差 − 手数料 ＝ 差引」。利益が出るときは数量と純利益も出す */
-function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
+/** 主役の方向と、取引金額ぶんの「価格差 − 手数料 ＝ 差引」。差引がそのまま損益になる */
+function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
   const t = useT();
+  const plan = planForAmount(d, amount);
+  const money = (v: string) => formatDecimal(v, { maxFractionDigits: AMOUNT_DIGITS, signed: true });
+  const quantity = formatDecimal(plan.quantity, { maxFractionDigits: QUANTITY_DIGITS });
+  // 実際にかかる金額（数量 × 買値）。数量を8桁で切っているので、指定額とわずかにずれることがある
+  const cost = formatDecimal(multiplyDecimals(plan.quantity, d.bestAsk.price), {
+    maxFractionDigits: 2,
+  });
+
   return (
     <div className="verdict">
       <p>
@@ -74,47 +86,27 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
           <span className="sell">{t.sellOn(exchangeName(exchanges, d.sellExchange))}</span>
         </strong>
       </p>
-      <Equation direction={d} pair={pair} />
-      {d.profitable && (
-        <p className="figures">
-          <Figure label={t.quantity}>
-            <Flash value={d.quantity}>
-              {formatDecimal(d.quantity, { maxFractionDigits: QUANTITY_DIGITS })} {pair.base}
-            </Flash>
-          </Figure>
-          <Figure label={t.netProfit} className="pos">
-            <Flash value={d.netProfit}>
-              {formatDecimal(d.netProfit, { maxFractionDigits: AMOUNT_DIGITS, signed: true })}{' '}
-              {pair.quote}
-            </Flash>
-          </Figure>
+      <p className="equation">
+        <Figure label={t.rowSpread}>
+          <Flash value={plan.gross}>{money(plan.gross)}</Flash>
+        </Figure>
+        <span className="op">−</span>
+        <Figure label={t.rowFees}>
+          {formatDecimal(plan.fees, { maxFractionDigits: AMOUNT_DIGITS })}
+        </Figure>
+        <span className="op">=</span>
+        <Figure label={t.rowNet} className={d.profitable ? 'pos' : 'neg'}>
+          <Flash value={plan.net}>{money(plan.net)}</Flash>
+        </Figure>
+        <span className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</span>
+      </p>
+      {plan.capped && (
+        <p className="warn small">
+          {t.capped(quantity, pair.base, cost, pair.quote)}
+          {d.depthExhausted && `。${t.depthExhausted}`}
         </p>
       )}
-      {d.profitable && d.depthExhausted && <p className="warn small">{t.depthExhausted}</p>}
     </div>
-  );
-}
-
-/** 1単位あたりの「価格差 − 手数料 ＝ 差引」を式の形で並べる。文章を読まなくても数字の関係が分かる */
-function Equation({ direction: d, pair }: { direction: Direction; pair: PairSnapshot }) {
-  const t = useT();
-  const digits = spreadDigits(d);
-  const amount = (v: string) => formatDecimal(v, { maxFractionDigits: digits, signed: true });
-  return (
-    <p className="equation">
-      <Figure label={t.rowSpread}>
-        <Flash value={d.grossSpread}>{amount(d.grossSpread)}</Flash>
-      </Figure>
-      <span className="op">−</span>
-      <Figure label={t.rowFees}>
-        {formatDecimal(feePerUnit(d), { maxFractionDigits: digits })}
-      </Figure>
-      <span className="op">=</span>
-      <Figure label={t.rowNet} className={d.profitable ? 'pos' : 'neg'}>
-        <Flash value={d.netSpread}>{amount(d.netSpread)}</Flash>
-      </Figure>
-      <span className="muted small">{t.perUnit(pair.base, pair.quote)}</span>
-    </p>
   );
 }
 
@@ -134,11 +126,6 @@ function Figure({
       <span className="figure__label">{label}</span>
     </span>
   );
-}
-
-/** 1単位あたりの値は価格の刻み（小数桁数）に合わせて丸める。手数料を掛けて増えた末尾の桁は判断に使わない */
-function spreadDigits(d: Direction): number {
-  return Math.max(2, fractionDigitsOf(d.bestAsk.price), fractionDigitsOf(d.bestBid.price));
 }
 
 /**

@@ -1,5 +1,6 @@
-import { formatDecimal, subtractDecimals } from '../format/number';
+import { formatDecimal } from '../format/number';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
+import { planForAmount } from './trade';
 
 /** 利益が出ている方向（ペアごとに多くても1つ）。タブ通知やバッジの表示に使う */
 export function profitableDirection(pair: PairSnapshot): Direction | null {
@@ -19,17 +20,14 @@ export function bestDirection(pair: PairSnapshot): Direction | null {
   }, null);
 }
 
-/** 1単位あたりの手数料の合計。サーバーは価格差と手数料込み損益を送ってくるので、その差から求める */
-export function feePerUnit(d: Direction): string {
-  return subtractDecimals(d.grossSpread, d.netSpread);
-}
-
-/** タブのタイトル用の短い要約。例: "BTC +1.23 / ETH +0.45"。機会が無ければ null */
-export function titleSummary(pairs: PairSnapshot[]): string | null {
+/** タブのタイトル用の短い要約。例: "BTC +1.23 / ETH +0.45"。機会が無ければ null。利益は取引金額ぶんの値 */
+export function titleSummary(pairs: PairSnapshot[], amount: string): string | null {
   const parts = pairs.flatMap((p) => {
     const d = profitableDirection(p);
     return d
-      ? [`${p.base} ${formatDecimal(d.netProfit, { maxFractionDigits: 2, signed: true })}`]
+      ? [
+          `${p.base} ${formatDecimal(planForAmount(d, amount).net, { maxFractionDigits: 2, signed: true })}`,
+        ]
       : [];
   });
   return parts.length > 0 ? parts.join(' / ') : null;

@@ -3,9 +3,11 @@ import { Dashboard } from './components/Dashboard';
 import { useArbitrageFeed } from './hooks/useArbitrageFeed';
 import { useStoredBoolean } from './hooks/useStoredBoolean';
 import { useStoredLang } from './hooks/useStoredLang';
+import { useStoredString } from './hooks/useStoredString';
 import { useTitleNotification } from './hooks/useTitleNotification';
 import { getDict, LangContext } from './i18n';
 import { titleSummary } from './state/selectors';
+import { DEFAULT_AMOUNT, normalizeAmount } from './state/trade';
 
 /** WebSocket の接続先。通常は同一オリジンの /ws（バックエンドが画面ごと配信する） */
 function defaultWsUrl(): string {
@@ -18,6 +20,7 @@ function defaultWsUrl(): string {
 }
 
 const TAB_NOTIFICATION_KEY = 'arb.tabNotification';
+const AMOUNT_KEY = 'arb.amount';
 
 export function App() {
   const [lang, setLang] = useStoredLang();
@@ -25,8 +28,11 @@ export function App() {
   const state = useArbitrageFeed(wsUrl);
   // 既定はオン。利益が出た瞬間を見逃さないため。切ったらブラウザに保存される
   const [tabNotification, setTabNotification] = useStoredBoolean(TAB_NOTIFICATION_KEY, true);
+  // 取引金額（Quote 通貨建て）。入力欄の文字列をそのまま保存し、計算には正の数に直したものを使う
+  const [amountInput, setAmountInput] = useStoredString(AMOUNT_KEY, DEFAULT_AMOUNT);
+  const amount = normalizeAmount(amountInput);
 
-  const summary = useMemo(() => titleSummary(state.pairs), [state.pairs]);
+  const summary = useMemo(() => titleSummary(state.pairs, amount), [state.pairs, amount]);
   useTitleNotification(tabNotification, summary, getDict(lang).appTitle);
 
   // 読み上げや翻訳機能が正しい言語として扱えるよう、html の lang 属性も合わせる
@@ -40,6 +46,9 @@ export function App() {
         state={state}
         lang={lang}
         onLangChange={setLang}
+        amountInput={amountInput}
+        amount={amount}
+        onAmountChange={setAmountInput}
         tabNotification={tabNotification}
         onTabNotificationChange={setTabNotification}
       />

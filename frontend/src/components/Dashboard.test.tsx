@@ -13,7 +13,13 @@ import { Dashboard } from './Dashboard';
 
 function renderDashboard(
   state: FeedState,
-  { lang = 'ja' as Lang, onLangChange = vi.fn(), onTabNotificationChange = vi.fn() } = {},
+  {
+    lang = 'ja' as Lang,
+    amount = '100',
+    onLangChange = vi.fn(),
+    onAmountChange = vi.fn(),
+    onTabNotificationChange = vi.fn(),
+  } = {},
 ) {
   render(
     <LangContext.Provider value={lang}>
@@ -21,12 +27,15 @@ function renderDashboard(
         state={state}
         lang={lang}
         onLangChange={onLangChange}
+        amountInput={amount}
+        amount={amount}
+        onAmountChange={onAmountChange}
         tabNotification={false}
         onTabNotificationChange={onTabNotificationChange}
       />
     </LangContext.Provider>,
   );
-  return { onLangChange, onTabNotificationChange };
+  return { onLangChange, onAmountChange, onTabNotificationChange };
 }
 
 const initialized = reducer(reducer(initialState, { type: 'connection', status: 'connected' }), {
@@ -86,35 +95,52 @@ describe('Dashboard', () => {
     expect(summary).toHaveTextContent('+0.2397 USDT');
   });
 
-  it('利益が出ないペアは、より有利な方向を式で示す', () => {
+  it('利益が出ないペアは、取引金額ぶんの「価格差 − 手数料 ＝ 差引」を式で示す', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('利益なし')).toBeTruthy();
     expect(within(btc).getByText('Binanceで買い').closest('strong')).toHaveTextContent(
       'Binanceで買い → OKXで売り',
     );
-    // 価格差 +3.04 − 手数料 130.87 = 差引 −127.83（USDT / 1 BTC）
-    expect(within(btc).getByText('+3.04')).toBeTruthy();
-    expect(within(btc).getByText('130.87')).toBeTruthy();
-    expect(within(btc).getByText('-127.83')).toBeTruthy();
-    expect(within(btc).queryByText(/利益まであと/)).toBeNull();
+    // 100 USDT ÷ 買値 65433.8 = 0.00152826 BTC。価格差 +3.04 × 数量 = +0.0046、手数料 0.2、差引 −0.1954
+    expect(within(btc).getByText('+0.0046')).toBeTruthy();
+    expect(within(btc).getByText('0.2')).toBeTruthy();
+    expect(within(btc).getByText('-0.1954')).toBeTruthy();
+    expect(within(btc).getByText('0.00152826 BTC ≈ 100 USDT')).toBeTruthy();
+    expect(within(btc).queryByText(/板で利益が出るのは/)).toBeNull();
   });
 
-  it('利益が出るペアは、数量と純利益を数字で示す', () => {
+  it('利益が出るペアは、板で利益が出る量までで計算し、その旨を添える', () => {
     renderDashboard(withOpportunity);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.className).toContain('card--profitable');
-    expect(within(btc).getAllByText('利益あり').length).toBeGreaterThan(0);
+    expect(within(btc).getByText('利益あり')).toBeTruthy();
     expect(within(btc).getByText('OKXで買い').closest('strong')).toHaveTextContent(
       'OKXで買い → Binanceで売り',
     );
-    expect(within(btc).getByText('0.3 BTC')).toBeTruthy();
-    expect(within(btc).getByText('+0.2397 USDT')).toBeTruthy();
-    // 価格差 +1 − 手数料 0.2 = 差引 +0.8（価格の刻みに合わせて小数2桁）
-    expect(within(btc).getByText('+1')).toBeTruthy();
-    expect(within(btc).getByText('0.2')).toBeTruthy();
-    expect(within(btc).getByText('+0.8')).toBeTruthy();
+    // 100 USDT は 1 BTC ぶんだが、板で利益が出るのは 0.3 BTC まで → サーバーの計算値
+    expect(within(btc).getByText('+0.3')).toBeTruthy();
+    expect(within(btc).getByText('0.0603')).toBeTruthy();
+    expect(within(btc).getByText('+0.2397')).toBeTruthy();
+    expect(within(btc).getByText('0.3 BTC ≈ 30 USDT')).toBeTruthy();
+    expect(within(btc).getByText(/板で利益が出るのは 0.3 BTC（約 30 USDT）まで/)).toBeTruthy();
     expect(within(btc).getByText(/取得済みの板の範囲での値/)).toBeTruthy();
+  });
+
+  it('取引金額を小さくすると、その金額ぶんの数量で計算する', () => {
+    renderDashboard(withOpportunity, { amount: '20' });
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    // 20 USDT ÷ 買値 100 = 0.2 BTC。差引 0.799 × 0.2 = 0.1598
+    expect(within(btc).getByText('0.2 BTC ≈ 20 USDT')).toBeTruthy();
+    expect(within(btc).getByText('+0.1598')).toBeTruthy();
+    expect(within(btc).queryByText(/板で利益が出るのは/)).toBeNull();
+  });
+
+  it('取引金額の入力を変えると通知される', () => {
+    const { onAmountChange } = renderDashboard(initialized);
+    const input = screen.getByRole('spinbutton', { name: /取引金額/ });
+    fireEvent.change(input, { target: { value: '500' } });
+    expect(onAmountChange).toHaveBeenCalledWith('500');
   });
 
   it('各取引所の買値・売値を「買って売る」の順に並べ、有利な方向で使う価格に色を付ける', () => {
@@ -168,6 +194,7 @@ describe('Dashboard', () => {
     const history = screen.getByRole('region', { name: '検知履歴' });
     const rows = within(history).getAllByRole('row').slice(1); // ヘッダーを除く
     expect(rows).toHaveLength(2);
+    // 最大純利益 1.5（0.3 BTC、平均買値 100）。100 USDT ぶんは 0.3 BTC で頭打ちなので +1.5 のまま
     expect(rows[0]).toHaveTextContent('+1.5 USDT');
     expect(rows[0]).toHaveTextContent('2.5秒');
     expect(rows[1]).toHaveTextContent('継続中');

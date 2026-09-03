@@ -1,3 +1,4 @@
+import { signOf } from '../format/number';
 import { type Lang, useT } from '../i18n';
 import type { ExchangeInfo } from '../protocol/types';
 import type { ConnectionStatus } from '../state/reducer';
@@ -7,16 +8,22 @@ interface HeaderProps {
   exchanges: ExchangeInfo[];
   lang: Lang;
   onLangChange: (lang: Lang) => void;
+  amountInput: string;
+  quote: string;
+  onAmountChange: (value: string) => void;
   tabNotification: boolean;
   onTabNotificationChange: (enabled: boolean) => void;
 }
 
-/** タイトル、言語と通知の切り替え、接続状態の1行 */
+/** タイトル、取引金額・言語・通知の設定、接続状態の1行 */
 export function Header({
   connection,
   exchanges,
   lang,
   onLangChange,
+  amountInput,
+  quote,
+  onAmountChange,
   tabNotification,
   onTabNotificationChange,
 }: HeaderProps) {
@@ -34,6 +41,19 @@ export function Header({
           </div>
         </div>
         <div className="controls">
+          <label className="amount">
+            {t.tradeAmount}
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="any"
+              value={amountInput}
+              aria-invalid={signOf(amountInput) !== 1}
+              onChange={(e) => onAmountChange(e.target.value)}
+            />
+            <span className="muted">{quote}</span>
+          </label>
           <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
           <label className="switch" title={t.tabTitleNotificationHelp}>
             <input

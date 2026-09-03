@@ -21,9 +21,11 @@ export const en: Dict = {
   rowSpread: 'Price gap',
   rowFees: 'Fees',
   rowNet: 'Net',
-  perUnit: (base: string, quote: string) => `${quote} / 1 ${base}`,
-  quantity: 'Quantity',
-  netProfit: 'Net profit',
+  tradeAmount: 'Trade amount',
+  forAmount: (quantity: string, base: string, cost: string, quote: string) =>
+    `${quantity} ${base} ≈ ${cost} ${quote}`,
+  capped: (quantity: string, base: string, cost: string, quote: string) =>
+    `Only ${quantity} ${base} (≈ ${cost} ${quote}) is profitable at the current depth`,
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
   colExchange: 'Exchange',

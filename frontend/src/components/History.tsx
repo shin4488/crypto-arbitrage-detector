@@ -2,14 +2,17 @@ import { formatDecimal } from '../format/number';
 import { useT } from '../i18n';
 import type { Episode, ExchangeInfo } from '../protocol/types';
 import { exchangeName } from '../state/selectors';
+import { episodeForAmount } from '../state/trade';
 import { Duration } from './Age';
 
 interface HistoryProps {
   history: Episode[];
   exchanges: ExchangeInfo[];
+  /** 取引金額（Quote 通貨建て、正の数）。履歴の利益もこの金額ぶんで示す */
+  amount: string;
 }
 
-export function History({ history, exchanges }: HistoryProps) {
+export function History({ history, exchanges, amount }: HistoryProps) {
   const t = useT();
   return (
     <section className="card" aria-label={t.historyTitle}>
@@ -40,6 +43,7 @@ export function History({ history, exchanges }: HistoryProps) {
             <tbody>
               {history.map((ep) => {
                 const [base, quote] = ep.pair.split('/');
+                const trade = episodeForAmount(ep, amount);
                 return (
                   <tr key={ep.id}>
                     <td>
@@ -54,12 +58,11 @@ export function History({ history, exchanges }: HistoryProps) {
                         exchangeName(exchanges, ep.sellExchange),
                       )}{' '}
                       <span className="muted small">
-                        ({formatDecimal(ep.quantityAtMax, { maxFractionDigits: 8 })} {base})
+                        ({formatDecimal(trade.quantity, { maxFractionDigits: 8 })} {base})
                       </span>
                     </td>
                     <td className="num pos">
-                      {formatDecimal(ep.maxNetProfit, { maxFractionDigits: 4, signed: true })}{' '}
-                      {quote}
+                      {formatDecimal(trade.net, { maxFractionDigits: 4, signed: true })} {quote}
                     </td>
                     <td className="num">
                       {ep.endedAt === null && <span className="badge small">{t.ongoing}</span>}{' '}

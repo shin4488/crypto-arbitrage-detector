@@ -150,3 +150,40 @@ export function subtractDecimals(a: string, b: string): string {
   const body = fracPart ? `${intPart}.${fracPart}` : intPart;
   return negative ? `-${body}` : body;
 }
+
+/** 10進文字列どうしの掛け算 a × b。誤差なく計算し、末尾の 0 は落とす */
+export function multiplyDecimals(a: string, b: string): string {
+  const pa = parseDecimal(a);
+  const pb = parseDecimal(b);
+  if (pa === null || pb === null) {
+    return 'NaN';
+  }
+  const product = BigInt(pa.intPart + pa.fracPart) * BigInt(pb.intPart + pb.fracPart);
+  return fromScaled(product, pa.fracPart.length + pb.fracPart.length, pa.negative !== pb.negative);
+}
+
+/** 10進文字列どうしの割り算 a ÷ b。小数 scale 桁で切り捨てる。b が 0 なら NaN */
+export function divideDecimals(a: string, b: string, scale = 8): string {
+  const pa = parseDecimal(a);
+  const pb = parseDecimal(b);
+  if (pa === null || pb === null) {
+    return 'NaN';
+  }
+  const divisor = BigInt(pb.intPart + pb.fracPart);
+  if (divisor === 0n) {
+    return 'NaN';
+  }
+  // (A / 10^fa) ÷ (B / 10^fb) を小数 scale 桁の整数で表す
+  const numerator = BigInt(pa.intPart + pa.fracPart) * 10n ** BigInt(pb.fracPart.length + scale);
+  const quotient = numerator / (divisor * 10n ** BigInt(pa.fracPart.length));
+  return fromScaled(quotient, scale, pa.negative !== pb.negative);
+}
+
+/** 10^scale 倍された整数を10進文字列に戻す */
+function fromScaled(value: bigint, scale: number, negative: boolean): string {
+  const digits = (value < 0n ? -value : value).toString().padStart(scale + 1, '0');
+  const intPart = digits.slice(0, digits.length - scale).replace(/^0+(?=\d)/, '');
+  const fracPart = digits.slice(digits.length - scale).replace(/0+$/, '');
+  const body = fracPart ? `${intPart}.${fracPart}` : intPart;
+  return negative && body !== '0' && value !== 0n ? `-${body}` : body;
+}
