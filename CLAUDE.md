@@ -55,7 +55,7 @@ make fmt / make test / make lint / make up / make dev
 - `internal/wire`: 配信 JSON の形式。フロントの `src/protocol/types.ts` と対応させる
 - `backend/config.json`: 設定の唯一の置き場。モジュール直下の `embed.go` でバイナリに埋め込み、`internal/config` が読む。本番相当（docker compose）でも開発（make dev）でも、編集して起動し直すだけで反映される
 - 取引所を増やす: `internal/exchange/<name>/` に `exchange.Feed` を実装して `registry` に登録する
-- 通貨ペアを増やす: `backend/config.json` の `pairs` に足して起動し直すだけ。コードにペアの一覧を書かない（`config.Default()` はこのファイルを埋め込んだもの）
+- 通貨ペアを増やす: `backend/config.json` の `pairs` に足して起動し直すだけ。コードにペアの一覧を書かない（`config.Default()` はこのファイルを埋め込んだもの）。手順は `.claude/skills/add-pair/SKILL.md`
 
 ## 変更したら確かめること
 
