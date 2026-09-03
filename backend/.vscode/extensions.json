@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "golang.go",
-    "ms-vscode.vscode-json",
-    "redhat.vscode-yaml",
-    "ms-vscode.makefile-tools",
-    "ms-azuretools.vscode-docker"
-  ]
-}

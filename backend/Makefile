@@ -1,91 +1,53 @@
-.PHONY: build run clean test deps
+# バックエンド（Go）の開発用タスク
+#
+# Go はローカルに入れない前提なので、既定では Docker コンテナの中で go コマンドを動かす。
+# ローカルに Go がある環境や CI では `make test GO=go` のように上書きできる。
 
-# Go parameters
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-GOMOD=$(GOCMD) mod
-BINARY_NAME=crypto-arb-backend
+GO_IMAGE      ?= golang:1.24-alpine
+LINT_IMAGE    ?= golangci/golangci-lint:v2.1.6
+MOD_CACHE     ?= crypto-arb-gomod
+BUILD_CACHE   ?= crypto-arb-gobuild
 
-# Default target
-all: test build
+# コンテナ内で動かす go コマンド。モジュールとビルドのキャッシュは名前付きボリュームに残し、2回目以降を速くする。
+DOCKER_GO = docker run --rm -t \
+	-v "$(CURDIR)":/src -w /src \
+	-v $(MOD_CACHE):/go/pkg/mod \
+	-v $(BUILD_CACHE):/root/.cache/go-build \
+	-e CGO_ENABLED=0 \
+	$(GO_IMAGE)
+GO ?= $(DOCKER_GO) go
 
-# Install dependencies
-deps:
-	$(GOMOD) download
-	$(GOMOD) tidy
+.PHONY: help tidy fmt vet test test-race cover lint build run clean
 
-# Build the application
-build:
-	$(GOBUILD) -o $(BINARY_NAME) -v
+help: ## タスク一覧を表示
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 
-# Run the application
-run:
-	$(GOCMD) run main.go
+tidy: ## go.mod / go.sum を整理
+	$(GO) mod tidy
 
-# Run with race detection
-run-race:
-	$(GOCMD) run -race main.go
+fmt: ## コード整形（gofmt）
+	$(GO) fmt ./...
 
-# Build and run
-build-run: build
-	./$(BINARY_NAME)
+vet: ## 静的検査（go vet）
+	$(GO) vet ./...
 
-# Test the application
-test:
-	$(GOTEST) -v ./...
+test: ## テスト実行
+	$(GO) test ./...
 
-# Test with coverage
-test-coverage:
-	$(GOTEST) -v -coverprofile=coverage.out ./...
-	$(GOCMD) tool cover -html=coverage.out
+test-race: ## データ競合の検出付きテスト（CGO が必要なので golang:1.24 などの glibc イメージかローカルの Go で実行する）
+	$(GO) test -race ./...
 
-# Clean build artifacts
-clean:
-	$(GOCLEAN)
-	rm -f $(BINARY_NAME)
-	rm -f coverage.out
+cover: ## カバレッジ計測
+	$(GO) test -coverprofile=coverage.out ./... && $(GO) tool cover -func=coverage.out | tail -1
 
-# Format code
-fmt:
-	$(GOCMD) fmt ./...
+lint: ## golangci-lint 実行
+	docker run --rm -t -v "$(CURDIR)":/src -w /src -v $(MOD_CACHE):/go/pkg/mod $(LINT_IMAGE) golangci-lint run ./...
 
-# Vet code
-vet:
-	$(GOCMD) vet ./...
+build: ## バイナリをビルド（bin/server）
+	$(GO) build -o bin/server ./cmd/server
 
-# Lint code (requires golangci-lint)
-lint:
-	golangci-lint run
+run: ## 開発用にサーバーを起動（docker compose の backend-dev、ポート8080）
+	cd .. && docker compose --profile dev up backend-dev
 
-# Development workflow
-dev: fmt vet test run
-
-# Production build
-prod:
-	CGO_ENABLED=0 GOOS=linux $(GOBUILD) -a -installsuffix cgo -o $(BINARY_NAME) .
-
-# Docker build (optional)
-docker-build:
-	docker build -t crypto-arb-backend .
-
-# Show help
-help:
-	@echo "Available targets:"
-	@echo "  deps         Install dependencies"
-	@echo "  build        Build the application"
-	@echo "  run          Run the application"
-	@echo "  run-race     Run with race detection"
-	@echo "  build-run    Build and run"
-	@echo "  test         Run tests"
-	@echo "  test-coverage Run tests with coverage"
-	@echo "  clean        Clean build artifacts"
-	@echo "  fmt          Format code"
-	@echo "  vet          Vet code"
-	@echo "  lint         Lint code"
-	@echo "  dev          Development workflow (fmt, vet, test, run)"
-	@echo "  prod         Production build"
-	@echo "  docker-build Build Docker image"
-	@echo "  help         Show this help" 
+clean: ## 生成物を削除
+	rm -rf bin coverage.out

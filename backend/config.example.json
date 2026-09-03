@@ -1,0 +1,13 @@
+{
+  "server": {
+    "addr": ":8080",
+    "allowedOrigins": []
+  },
+  "exchanges": [
+    { "id": "binance", "name": "Binance", "takerFeeRate": "0.001" },
+    { "id": "okx", "name": "OKX", "takerFeeRate": "0.001" }
+  ],
+  "pairs": ["BTC/USDT", "ETH/USDT"],
+  "history": { "limit": 200 },
+  "log": { "level": "info", "format": "text" }
+}

@@ -1,49 +1,73 @@
-version: '3.8'
+# 使い方
+#   本番相当で動かす:  docker compose up --build            → http://localhost:8080
+#   開発用に動かす:    make dev                             → 画面 http://localhost:3000、API 8080
+#                      （docker compose --profile dev up backend-dev frontend-dev と同じ）
+#
+# 開発用サービスはソースをマウントして動かすので、Go や Node.js をローカルに入れなくてよい。
+# 依存やビルドのキャッシュは名前付きボリュームに残し、2回目以降の起動を速くする。
 
 services:
-  # Backend (Go)
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: crypto-arb-backend
+  # 本番相当。フロントエンドを埋め込んだ Go バイナリ1つだけのコンテナ
+  app:
+    build: .
+    image: crypto-arbitrage-detector:local
     ports:
       - "8080:8080"
     environment:
-      - GO_ENV=development
-    networks:
-      - crypto-arb-network
+      ARB_LOG_FORMAT: json
+      # 設定ファイルを使うときは、ファイルをマウントしてパスを渡す
+      # ARB_CONFIG: /config.json
+    # volumes:
+    #   - ./config.json:/config.json:ro
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://0.0.0.0:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # コンテナに与える権限を最小にする（書き込み不可のファイルシステム、権限昇格の禁止、ケーパビリティなし）
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 
-  # Frontend (React)
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: crypto-arb-frontend
+  # 開発用: バックエンドをソースから動かし、.go が変わったら自動で再起動する（scripts/dev.sh）
+  backend-dev:
+    profiles: [dev]
+    image: golang:1.24-alpine@sha256:8bee1901f1e530bfb4a7850aa7a479d17ae3a18beb6e09064ed54cfd245b7191
+    working_dir: /src
+    command: sh scripts/dev.sh
+    ports:
+      - "8080:8080"
+    environment:
+      CGO_ENABLED: "0"
+      ARB_LOG_LEVEL: debug
+    volumes:
+      - ./backend:/src
+      - go-mod:/go/pkg/mod
+      - go-build:/root/.cache/go-build
+
+  # 開発用: Vite の開発サーバー。/ws は backend-dev に中継する
+  frontend-dev:
+    profiles: [dev]
+    image: node:24-alpine@sha256:e67514e5d0f6c46656005e1b693b2ec9d52e80b641307de684d4a015ba7a4eaf
+    working_dir: /app
+    command: sh -c "corepack enable && yarn install --immutable && yarn dev"
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8080
-      - REACT_APP_WS_URL=ws://localhost:8080/ws
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+      COREPACK_HOME: /cache/corepack
+      YARN_CACHE_FOLDER: /cache/yarn
+      DEV_PROXY_TARGET: http://backend-dev:8080
+      # Docker Desktop のバインドマウントではファイル変更の通知が届かないため、ポーリングで検知する
+      DEV_WATCH_POLLING: "true"
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-    networks:
-      - crypto-arb-network
+      - ./frontend:/app
+      # node_modules はホスト（macOS 用のバイナリ）と混ざらないよう、コンテナ専用のボリュームにする
+      - frontend-node-modules:/app/node_modules
+      - node-cache:/cache
     depends_on:
-      - backend
-    restart: unless-stopped
-    stdin_open: true
-    tty: true
+      - backend-dev
 
-networks:
-  crypto-arb-network:
-    driver: bridge 
+volumes:
+  go-mod:
+  go-build:
+  frontend-node-modules:
+  node-cache:

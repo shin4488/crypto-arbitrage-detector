@@ -1,0 +1,109 @@
+# CI: バックエンド・フロントエンドの検査、Docker イメージのビルド、秘密情報の混入検査
+#
+# サプライチェーン対策として、使用する Action はタグではなくコミット SHA で固定する（タグは差し替え可能なため）。
+# 更新は Dependabot が提案する。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: 依存の検証（go.sum とチェックサム DB）
+        run: go mod verify
+      - name: go.mod / go.sum が整理済みか
+        run: go mod tidy -diff
+      - name: フォーマット検査
+        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+      - name: go vet
+        run: go vet ./...
+      - name: テスト（データ競合検出付き）
+        run: go test -race -coverprofile=coverage.out ./...
+      - name: カバレッジ
+        run: go tool cover -func=coverage.out | tail -1
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.1.6
+          working-directory: backend
+      - name: 既知の脆弱性検査（govulncheck）
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
+        with:
+          work-dir: backend
+          go-version-file: backend/go.mod
+
+  frontend:
+    name: Frontend (TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: frontend/.nvmrc
+      - name: Yarn を有効化（package.json の packageManager で固定）
+        run: corepack enable
+      - name: 依存のインストール（lockfile と完全一致でなければ失敗）
+        run: yarn install --immutable
+      - name: 型検査
+        run: yarn typecheck
+      - name: lint / フォーマット検査
+        run: yarn lint
+      - name: テスト
+        run: yarn test
+      - name: ビルド
+        run: yarn build
+      - name: 既知の脆弱性検査
+        run: yarn npm audit --all --recursive
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: イメージをビルド
+        run: docker build -t crypto-arbitrage-detector:ci .
+      - name: 起動してヘルスチェック
+        run: |
+          docker run -d --name app -p 8080:8080 crypto-arbitrage-detector:ci
+          for i in $(seq 1 20); do
+            if curl -fsS http://localhost:8080/healthz; then echo; exit 0; fi
+            sleep 1
+          done
+          docker logs app
+          exit 1
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: 機密情報の混入検査（gitleaks）
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
