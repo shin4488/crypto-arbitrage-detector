@@ -1,5 +1,5 @@
 #!/bin/sh
-# 開発用: Go のソースが変わったらサーバーを再起動する。
+# 開発用: Go のソースや設定ファイル（config.json）が変わったらサーバーを再起動する。
 # Docker Desktop のバインドマウントではファイル変更の通知（inotify）が届かないので、
 # 一定間隔で更新時刻を見比べる方式にしている。追加のツールを入れずに済ませるため sh だけで書く。
 set -eu
@@ -7,8 +7,8 @@ set -eu
 interval="${DEV_POLL_INTERVAL:-2}"
 
 snapshot() {
-  # .go と go.mod / go.sum の更新時刻をまとめて1つの文字列にする
-  find . -name '*.go' -o -name 'go.mod' -o -name 'go.sum' | sort | xargs stat -c '%n %Y' 2>/dev/null
+  # .go と go.mod / go.sum、バイナリに埋め込む設定ファイル config.json の更新時刻をまとめて1つの文字列にする
+  find . -name '*.go' -o -name 'go.mod' -o -name 'go.sum' -o -name 'config.json' | sort | xargs stat -c '%n %Y' 2>/dev/null
 }
 
 pid=""

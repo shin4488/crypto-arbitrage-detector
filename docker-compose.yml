@@ -19,7 +19,8 @@ services:
       - "8080:8080"
     environment:
       ARB_LOG_FORMAT: json
-      # 設定ファイルを使うときは、ファイルをマウントしてパスを渡す
+      # 設定（通貨ペアなど）は backend/config.json をビルド時に埋め込んでいる。変えたら --build で作り直す。
+      # イメージを作り直さずに一部だけ差し替えたいときは、JSON ファイルをマウントしてパスを渡す
       # ARB_CONFIG: /config.json
     # volumes:
     #   - ./config.json:/config.json:ro
@@ -31,7 +32,7 @@ services:
     cap_drop:
       - ALL
 
-  # 開発用: バックエンドをソースから動かし、.go が変わったら自動で再起動する（scripts/dev.sh）
+  # 開発用: バックエンドをソースから動かし、.go や config.json が変わったら自動で再起動する（scripts/dev.sh）
   backend-dev:
     profiles: [dev]
     image: golang:1.27-alpine@sha256:cf6fca6641884b8433441b2b0652976f975e1d0fdd26d177eaaf8596087f3125
