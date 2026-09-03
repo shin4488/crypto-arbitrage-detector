@@ -7,7 +7,7 @@
     { "id": "binance", "name": "Binance", "takerFeeRate": "0.001" },
     { "id": "okx", "name": "OKX", "takerFeeRate": "0.001" }
   ],
-  "pairs": ["BTC/USDT", "ETH/USDT", "XRP/USDT", "SHIB/USDT", "DOGE/USDT"],
+  "pairs": ["BTC/USDT", "ETH/USDT", "XRP/USDT", "SHIB/USDT", "DOGE/USDT", "SOL/USDT"],
   "history": { "limit": 200 },
   "log": { "level": "info", "format": "text" }
 }
