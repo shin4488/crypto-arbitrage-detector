@@ -206,9 +206,23 @@ describe('Dashboard', () => {
     expect(screen.getByText('検知はまだありません')).toBeTruthy();
   });
 
-  it('手数料の設定を最後に添える', () => {
+  it('手数料の設定を最後に添え、ⓘ で根拠と公式ページへのリンクを出す', () => {
     renderDashboard(initialized);
     expect(screen.getByText(/手数料: Binance 0.1%・OKX 0.1%（taker）/)).toBeTruthy();
+    const button = screen.getByRole('button', { name: '手数料について' });
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    const popover = screen.getByRole('tooltip');
+    expect(popover).toHaveTextContent('Binance: 一般ユーザー maker 0.1% / taker 0.1%');
+    expect(popover).toHaveTextContent('OKX: Lv1 maker 0.08% / taker 0.1%');
+    expect(popover).toHaveTextContent('手数料はランク');
+    const links = within(popover).getAllByRole('link', { name: '公式の手数料ページ' });
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      'https://www.binance.com/en/fee/trading',
+      'https://www.okx.com/fees',
+    ]);
+    expect(links[0]?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
   it('タブ通知のトグルを切り替えると通知される', () => {

@@ -51,6 +51,18 @@ export const en: Dict = {
   ongoing: 'Ongoing',
 
   feeNote: (fees: string) => `Fees: ${fees} (taker)`,
+  feeInfoLabel: 'About fees',
+  feeInfoTitle: 'About fees',
+  feeInfoIntro:
+    'The fees used here are the published spot taker fees for the lowest tier on each exchange.',
+  feeTier: { regular: 'Regular user', lv1: 'Lv1' },
+  feeInfoRate: (exchange: string, tier: string, maker: string, taker: string) =>
+    `${exchange}: ${tier} maker ${maker} / taker ${taker}`,
+  feeInfoLink: 'official fee page',
+  feeInfoTier:
+    'Fees depend on your tier (30-day volume, BNB/OKB holdings, etc.). To match your own rates, change takerFeeRate in the config file.',
+  feeInfoTaker:
+    'Taker fees apply because arbitrage takes existing orders immediately; maker fees only apply to resting orders.',
   theoreticalNote: 'Values are theoretical, calculated from order book data',
 
   ago: (ms: number) => `${formatDurationEn(ms)} ago`,

@@ -1,6 +1,6 @@
-import { formatPercent } from '../format/number';
 import { type Lang, useT } from '../i18n';
 import type { FeedState } from '../state/reducer';
+import { FeeNote } from './FeeNote';
 import { Header } from './Header';
 import { History } from './History';
 import { PairBoard } from './PairBoard';
@@ -34,9 +34,6 @@ export function Dashboard({
   onTabNotificationChange,
 }: DashboardProps) {
   const t = useT();
-  const fees = state.exchanges
-    .map((ex) => `${ex.name} ${formatPercent(ex.takerFeeRate, 3).replace('+', '')}`)
-    .join('・');
   // 取引金額の単位。通貨ペアはすべて同じ Quote 通貨（USDT）を前提に、先頭のペアから取る
   const quote = state.pairs[0]?.quote ?? 'USDT';
 
@@ -62,9 +59,7 @@ export function Dashboard({
             ))}
           </main>
           <History history={state.history} exchanges={state.exchanges} amount={amount} />
-          <p className="muted small">
-            {t.feeNote(fees)} · {t.theoreticalNote}
-          </p>
+          <FeeNote exchanges={state.exchanges} />
         </>
       ) : (
         state.connection === 'connected' && <p className="muted">{t.waitingForData}</p>

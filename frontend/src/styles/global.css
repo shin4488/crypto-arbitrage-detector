@@ -391,3 +391,64 @@ tr.detail td {
     animation: none;
   }
 }
+
+/* ⓘ を押すかマウスを乗せると出る説明 */
+.info {
+  position: relative;
+  display: inline-block;
+}
+
+.info__button {
+  width: 1.3em;
+  height: 1.3em;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8em;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: 0.1em;
+}
+
+.info__popover {
+  display: none;
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 1;
+  width: min(30rem, 85vw);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: Canvas;
+  color: CanvasText;
+  box-shadow: 0 4px 16px color-mix(in srgb, CanvasText 15%, transparent);
+  font-size: 0.9rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.info__popover > strong,
+.info__popover > span,
+.info__popover > ul {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.info__popover ul {
+  padding-left: 1.2em;
+}
+
+.info__popover li {
+  display: list-item;
+}
+
+.info:hover .info__popover,
+.info:focus-within .info__popover,
+.info__popover.is-open {
+  display: block;
+}

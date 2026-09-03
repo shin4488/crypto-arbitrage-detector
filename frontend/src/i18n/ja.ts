@@ -53,6 +53,18 @@ export const ja = {
   ongoing: '継続中',
 
   feeNote: (fees: string) => `手数料: ${fees}（taker）`,
+  feeInfoLabel: '手数料について',
+  feeInfoTitle: '手数料について',
+  feeInfoIntro:
+    '計算に使っている手数料は、各取引所が公表している最下位ランクの現物 taker 手数料です。',
+  feeTier: { regular: '一般ユーザー', lv1: 'Lv1' },
+  feeInfoRate: (exchange: string, tier: string, maker: string, taker: string) =>
+    `${exchange}: ${tier} maker ${maker} / taker ${taker}`,
+  feeInfoLink: '公式の手数料ページ',
+  feeInfoTier:
+    '手数料はランク（30日間の取引量や BNB・OKB などの保有）で変わります。ご自身の手数料に合わせるには、設定ファイルの takerFeeRate を変更してください。',
+  feeInfoTaker:
+    'taker を使うのは、裁定は板にある注文をすぐ取る取引で、板に注文を置いて待つ maker の手数料は使えないためです。',
   theoreticalNote: '表示している値は板の情報から計算した理論値です',
 
   ago: (ms: number) => `${formatDurationJa(ms)}前`,
