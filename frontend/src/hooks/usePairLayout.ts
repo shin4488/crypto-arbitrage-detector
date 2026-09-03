@@ -9,12 +9,12 @@ import {
 const KEY = 'arb.pairLayout';
 
 /**
- * 通貨ペアのカードの並び順・折りたたみ・非表示。開き直しても保てるよう localStorage に保存する。
+ * 通貨ペアのカードの並び順と表示・非表示。開き直しても保てるよう localStorage に保存する。
  * 保存できない環境（プライベートモードなど）でも動くよう、読み書きの失敗は無視する。
  */
 export function usePairLayout(
   pairs: { pair: string }[],
-): [PairLayout, (pair: string, action: LayoutAction) => void] {
+): [PairLayout, (action: LayoutAction) => void] {
   const [layout, setLayout] = useState<PairLayout>(() => {
     try {
       const raw = localStorage.getItem(KEY);
@@ -27,9 +27,9 @@ export function usePairLayout(
   const pairsRef = useRef(pairs);
   pairsRef.current = pairs;
 
-  const act = useCallback((pair: string, action: LayoutAction) => {
+  const act = useCallback((action: LayoutAction) => {
     setLayout((current) => {
-      const next = applyLayoutAction(current, pairsRef.current, pair, action);
+      const next = applyLayoutAction(current, pairsRef.current, action);
       if (next !== current) {
         try {
           localStorage.setItem(KEY, JSON.stringify(next));

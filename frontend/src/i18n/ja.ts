@@ -29,8 +29,10 @@ export const ja = {
 
   // カードの操作
   dragToReorder: 'ドラッグして並び替え（↑↓キーでも動かせます）',
-  collapse: '折りたたむ',
-  expand: '展開する',
+  hidePair: 'このペアを隠す',
+  showPairs: '表示するペア',
+  showAll: 'すべて表示',
+  noVisiblePairs: '表示するペアがありません。上の「表示するペア」から選んでください',
 
   colExchange: '取引所',
   colSellPrice: '売値 (bid)',

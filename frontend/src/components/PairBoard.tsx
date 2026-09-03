@@ -13,12 +13,11 @@ interface PairBoardProps {
   exchanges: ExchangeInfo[];
   /** 取引金額（Quote 通貨建て、正の数） */
   amount: string;
-  collapsed: boolean;
   /** このカードをドラッグ中 */
   dragging: boolean;
   /** ドラッグ中のカードをここに落とせる位置として示す */
   dropTarget: boolean;
-  onAction: (pair: string, action: LayoutAction) => void;
+  onAction: (action: LayoutAction) => void;
   onDragStart: (pair: string) => void;
   onDragOver: (pair: string) => void;
   onDrop: (pair: string) => void;
@@ -31,15 +30,14 @@ const PRICE_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの枠。左に「方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式」、右に「各取引所の買値・売値」。
- * 左上の取っ手をつかんでドラッグすると並び替えられる（取っ手にフォーカスして ↑↓ でも動かせる）。
+ * 1つの通貨ペアの枠。上に「方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式」、下に「各取引所の買値・売値」。
+ * 左上の取っ手をつかんでドラッグすると並び替えられ（取っ手にフォーカスして ↑↓ でも動かせる）、右上の目で隠せる。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
 export const PairBoard = memo(function PairBoard({
   pair,
   exchanges,
   amount,
-  collapsed,
   dragging,
   dropTarget,
   onAction,
@@ -62,7 +60,7 @@ export const PairBoard = memo(function PairBoard({
   const handleKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
-      onAction(pair.pair, { type: 'moveBy', delta: e.key === 'ArrowUp' ? -1 : 1 });
+      onAction({ type: 'moveBy', pair: pair.pair, delta: e.key === 'ArrowUp' ? -1 : 1 });
     }
   };
   // dataTransfer はブラウザでは必ずあるが、テスト環境（jsdom）では無いので存在を確かめてから使う
@@ -115,30 +113,49 @@ export const PairBoard = memo(function PairBoard({
         <button
           type="button"
           className="icon-button"
-          aria-label={collapsed ? t.expand : t.collapse}
-          title={collapsed ? t.expand : t.collapse}
-          aria-expanded={!collapsed}
-          onClick={() => onAction(pair.pair, { type: 'toggleCollapsed' })}
+          aria-label={t.hidePair}
+          title={t.hidePair}
+          onClick={() => onAction({ type: 'toggleHidden', pair: pair.pair })}
         >
-          {collapsed ? '▸' : '▾'}
+          <EyeOffIcon />
         </button>
       </header>
 
-      {!collapsed && (
-        <div className="card__body">
-          {!hasQuotes ? (
-            <p className="muted">{t.waitingForData}</p>
-          ) : best === null ? (
-            <p className="muted">{t.notEvaluable}</p>
-          ) : (
-            <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
-          )}
-          {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
-        </div>
-      )}
+      <div className="card__body">
+        {!hasQuotes ? (
+          <p className="muted">{t.waitingForData}</p>
+        ) : best === null ? (
+          <p className="muted">{t.notEvaluable}</p>
+        ) : (
+          <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
+        )}
+        {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
+      </div>
     </section>
   );
 });
+
+/** 「隠す」の目のアイコン。アイコン集を依存に足すほどではないので、この1つだけ手で描いている */
+function EyeOffIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="1.1em"
+      height="1.1em"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+      <path d="M9.9 5.2A10 10 0 0 1 12 5c5 0 9 4 10 7a11 11 0 0 1-2.7 3.9" />
+      <path d="M6.6 6.6C4.4 8 2.8 10 2 12c1 3 5 7 10 7a9.5 9.5 0 0 0 4.1-.9" />
+    </svg>
+  );
+}
 
 interface VerdictProps {
   direction: Direction;

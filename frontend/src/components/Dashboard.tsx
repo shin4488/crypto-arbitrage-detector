@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
 import { type Lang, useT } from '../i18n';
-import { isCollapsed, type LayoutAction, orderedPairs, type PairLayout } from '../state/layout';
+import { type LayoutAction, orderedPairs, type PairLayout, visiblePairs } from '../state/layout';
 import type { FeedState } from '../state/reducer';
 import { AmountBar } from './AmountBar';
 import { FeeNote } from './FeeNote';
 import { Header } from './Header';
 import { History } from './History';
 import { PairBoard } from './PairBoard';
+import { PairFilter } from './PairFilter';
 import { Summary } from './Summary';
 
 interface DashboardProps {
@@ -19,7 +20,7 @@ interface DashboardProps {
   amount: string;
   onAmountChange: (value: string) => void;
   layout: PairLayout;
-  onLayoutAction: (pair: string, action: LayoutAction) => void;
+  onLayoutAction: (action: LayoutAction) => void;
 }
 
 /**
@@ -38,6 +39,7 @@ export function Dashboard({
 }: DashboardProps) {
   const t = useT();
   const ordered = orderedPairs(state.pairs, layout);
+  const visible = visiblePairs(state.pairs, layout);
   // ドラッグ＆ドロップの途中経過。落とした時点で layout に反映する
   const [dragging, setDragging] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function Dashboard({
   const handleDrop = useCallback(
     (target: string) => {
       if (dragging !== null && dragging !== target) {
-        onLayoutAction(dragging, { type: 'moveTo', target });
+        onLayoutAction({ type: 'moveTo', pair: dragging, target });
       }
       setDragging(null);
       setDropTarget(null);
@@ -71,15 +73,18 @@ export function Dashboard({
       {state.initialized ? (
         <>
           <Summary pairs={state.pairs} exchanges={state.exchanges} amount={amount} />
-          <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
+          <div className="toolbar">
+            <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
+            <PairFilter pairs={ordered} layout={layout} onAction={onLayoutAction} />
+          </div>
           <main className="boards">
-            {ordered.map((pair) => (
+            {visible.length === 0 && <p className="muted">{t.noVisiblePairs}</p>}
+            {visible.map((pair) => (
               <PairBoard
                 key={pair.pair}
                 pair={pair}
                 exchanges={state.exchanges}
                 amount={amount}
-                collapsed={isCollapsed(layout, pair.pair)}
                 dragging={dragging === pair.pair}
                 dropTarget={dropTarget === pair.pair && dragging !== pair.pair}
                 onAction={onLayoutAction}

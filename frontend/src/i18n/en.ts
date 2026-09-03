@@ -27,8 +27,10 @@ export const en: Dict = {
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
   dragToReorder: 'Drag to reorder (or use the ↑↓ keys)',
-  collapse: 'Collapse',
-  expand: 'Expand',
+  hidePair: 'Hide this pair',
+  showPairs: 'Show pairs',
+  showAll: 'Show all',
+  noVisiblePairs: 'No pairs shown. Pick some under "Show pairs" above',
 
   colExchange: 'Exchange',
   colSellPrice: 'Sell (bid)',

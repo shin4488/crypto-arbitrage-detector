@@ -250,27 +250,63 @@ describe('Dashboard', () => {
     fireEvent.dragOver(eth);
     expect(eth.className).toContain('is-drop-target');
     fireEvent.drop(eth);
-    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'moveTo', target: 'ETH/USDT' });
+    expect(onLayoutAction).toHaveBeenCalledWith({
+      type: 'moveTo',
+      pair: 'BTC/USDT',
+      target: 'ETH/USDT',
+    });
     // キーボード
     fireEvent.keyDown(handle, { key: 'ArrowDown' });
-    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'moveBy', delta: 1 });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: 1 });
     fireEvent.keyDown(handle, { key: 'ArrowUp' });
-    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'moveBy', delta: -1 });
-    // 折りたたみ
-    fireEvent.click(within(btc).getByRole('button', { name: '折りたたむ' }));
-    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', { type: 'toggleCollapsed' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: -1 });
   });
 
-  it('保存した並び順で表示し、折りたたんだカードは見出しだけにする', () => {
-    renderDashboard(initialized, {
-      layout: { order: ['ETH/USDT', 'BTC/USDT'], collapsed: ['BTC/USDT'] },
-    });
+  it('保存した並び順でカードを並べる', () => {
+    renderDashboard(initialized, { layout: { order: ['ETH/USDT', 'BTC/USDT'], hidden: [] } });
     const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
     expect(regions.slice(0, 2)).toEqual(['ETH/USDT', 'BTC/USDT']);
+  });
+
+  it('「表示するペア」のチップとカードの「隠す」で表示を切り替え、「すべて表示」で戻せる', () => {
+    const { onLayoutAction } = renderDashboard(initialized, {
+      layout: { order: [], hidden: ['ETH/USDT'] },
+    });
+    const filter = screen.getByRole('group', { name: /表示するペア/ });
+    const chips = within(filter).getAllByRole('button');
+    expect(chips.map((c) => [c.textContent, c.getAttribute('aria-pressed')])).toEqual([
+      ['BTC/USDT', 'true'],
+      ['ETH/USDT', 'false'],
+      ['すべて表示', null],
+    ]);
+    // 隠したペアのカードは出ない
+    expect(screen.queryByRole('region', { name: 'ETH/USDT' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'BTC/USDT' })).toBeTruthy();
+
+    fireEvent.click(within(filter).getByRole('button', { name: 'ETH/USDT' }));
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'toggleHidden', pair: 'ETH/USDT' });
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
-    expect(within(btc).getByText('利益なし')).toBeTruthy();
-    expect(within(btc).queryByRole('table')).toBeNull();
-    expect(within(btc).getByRole('button', { name: '展開する' })).toBeTruthy();
+    fireEvent.click(within(btc).getByRole('button', { name: 'このペアを隠す' }));
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'toggleHidden', pair: 'BTC/USDT' });
+    fireEvent.click(within(filter).getByRole('button', { name: 'すべて表示' }));
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'showAll' });
+  });
+
+  it('何も隠していなければ「すべて表示」は押せない', () => {
+    renderDashboard(initialized);
+    expect(screen.getByRole('button', { name: 'すべて表示' })).toHaveProperty('disabled', true);
+  });
+
+  it('隠したペアでも、利益が出ればまとめの帯には出る（見落とさないため）', () => {
+    renderDashboard(withOpportunity, { layout: { order: [], hidden: ['BTC/USDT'] } });
+    expect(screen.queryByRole('region', { name: 'BTC/USDT' })).toBeNull();
+    expect(document.querySelector('.summary--profitable')?.textContent).toContain('BTC/USDT');
+  });
+
+  it('すべて隠すと、選び直し方を案内する', () => {
+    renderDashboard(initialized, { layout: { order: [], hidden: ['BTC/USDT', 'ETH/USDT'] } });
+    expect(screen.queryByRole('region', { name: /USDT/ })).toBeNull();
+    expect(screen.getByText(/表示するペアがありません/)).toBeTruthy();
   });
 });
 
