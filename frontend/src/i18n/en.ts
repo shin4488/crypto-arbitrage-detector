@@ -26,6 +26,11 @@ export const en: Dict = {
     `Only ${quantity} ${base} (≈ ${cost} ${quote}) is profitable at the current depth`,
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
+  moveUp: 'Move up',
+  moveDown: 'Move down',
+  collapse: 'Collapse',
+  expand: 'Expand',
+
   colExchange: 'Exchange',
   colSellPrice: 'Sell (bid)',
   colBuyPrice: 'Buy (ask)',

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { useArbitrageFeed } from './hooks/useArbitrageFeed';
+import { usePairLayout } from './hooks/usePairLayout';
 import { useStoredLang } from './hooks/useStoredLang';
 import { useTitleNotification } from './hooks/useTitleNotification';
 import { getDict, LangContext } from './i18n';
@@ -24,6 +25,7 @@ export function App() {
   // 取引金額（Quote 通貨建て）。開くたびに既定値から始める。入力欄の文字列を持ち、計算には正の数に直したものを使う
   const [amountInput, setAmountInput] = useState(DEFAULT_AMOUNT);
   const amount = normalizeAmount(amountInput);
+  const [layout, onLayoutAction] = usePairLayout(state.pairs);
 
   const summary = useMemo(() => titleSummary(state.pairs, amount), [state.pairs, amount]);
   // 利益が出ている間はタブのタイトルにも出す。文字列を1つ設定するだけなので常に有効にしている
@@ -43,6 +45,8 @@ export function App() {
         amountInput={amountInput}
         amount={amount}
         onAmountChange={setAmountInput}
+        layout={layout}
+        onLayoutAction={onLayoutAction}
       />
     </LangContext.Provider>
   );

@@ -2,6 +2,7 @@ import { memo, type ReactNode } from 'react';
 import { formatDecimal, multiplyDecimals, quantityFractionDigits } from '../format/number';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
+import type { LayoutAction } from '../state/layout';
 import { bestDirection, exchangeName } from '../state/selectors';
 import { planForAmount } from '../state/trade';
 import { Age } from './Age';
@@ -12,6 +13,10 @@ interface PairBoardProps {
   exchanges: ExchangeInfo[];
   /** 取引金額（Quote 通貨建て、正の数） */
   amount: string;
+  collapsed: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onAction: (pair: string, action: LayoutAction) => void;
 }
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
@@ -24,7 +29,15 @@ const AMOUNT_DIGITS = 4;
  * 板に並ぶ数量や逆方向の値は売買の判断に使わないので出さない。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
-export const PairBoard = memo(function PairBoard({ pair, exchanges, amount }: PairBoardProps) {
+export const PairBoard = memo(function PairBoard({
+  pair,
+  exchanges,
+  amount,
+  collapsed,
+  canMoveUp,
+  canMoveDown,
+  onAction,
+}: PairBoardProps) {
   const t = useT();
   const best = bestDirection(pair);
   const hasQuotes = Object.keys(pair.quotes).length > 0;
@@ -42,9 +55,41 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges, amount }: Pa
       <header className="card__header">
         <h2>{pair.pair}</h2>
         <span className={badge.className}>{badge.text}</span>
+        <span className="card__tools">
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t.moveUp}
+            title={t.moveUp}
+            disabled={!canMoveUp}
+            onClick={() => onAction(pair.pair, 'moveUp')}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={t.moveDown}
+            title={t.moveDown}
+            disabled={!canMoveDown}
+            onClick={() => onAction(pair.pair, 'moveDown')}
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={collapsed ? t.expand : t.collapse}
+            title={collapsed ? t.expand : t.collapse}
+            aria-expanded={!collapsed}
+            onClick={() => onAction(pair.pair, 'toggleCollapsed')}
+          >
+            {collapsed ? '+' : '−'}
+          </button>
+        </span>
       </header>
 
-      {!hasQuotes ? (
+      {collapsed ? null : !hasQuotes ? (
         <p className="muted">{t.waitingForData}</p>
       ) : best === null ? (
         <p className="muted">{t.notEvaluable}</p>
@@ -52,7 +97,7 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges, amount }: Pa
         <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
       )}
 
-      {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
+      {!collapsed && hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
     </section>
   );
 });

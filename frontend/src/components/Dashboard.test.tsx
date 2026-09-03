@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { type Lang, LangContext } from '../i18n';
+import { emptyLayout, type PairLayout } from '../state/layout';
 import { type FeedState, initialState, reducer } from '../state/reducer';
 import {
   episodeFixture,
@@ -13,7 +14,14 @@ import { Dashboard } from './Dashboard';
 
 function renderDashboard(
   state: FeedState,
-  { lang = 'ja' as Lang, amount = '100', onLangChange = vi.fn(), onAmountChange = vi.fn() } = {},
+  {
+    lang = 'ja' as Lang,
+    amount = '100',
+    onLangChange = vi.fn(),
+    onAmountChange = vi.fn(),
+    layout = emptyLayout as PairLayout,
+    onLayoutAction = vi.fn(),
+  } = {},
 ) {
   render(
     <LangContext.Provider value={lang}>
@@ -24,10 +32,12 @@ function renderDashboard(
         amountInput={amount}
         amount={amount}
         onAmountChange={onAmountChange}
+        layout={layout}
+        onLayoutAction={onLayoutAction}
       />
     </LangContext.Provider>,
   );
-  return { onLangChange, onAmountChange };
+  return { onLangChange, onAmountChange, onLayoutAction };
 }
 
 const initialized = reducer(reducer(initialState, { type: 'connection', status: 'connected' }), {
@@ -229,6 +239,34 @@ describe('Dashboard', () => {
     renderDashboard(initialized, { lang: 'en' });
     expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
+  });
+  it('カードの並び替え・折りたたみのボタンで操作を通知する', () => {
+    const { onLayoutAction } = renderDashboard(initialized);
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    const eth = screen.getByRole('region', { name: 'ETH/USDT' });
+    // 先頭は上へ動かせず、末尾は下へ動かせない
+    expect((within(btc).getByRole('button', { name: '上へ' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect((within(eth).getByRole('button', { name: '下へ' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    fireEvent.click(within(btc).getByRole('button', { name: '下へ' }));
+    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', 'moveDown');
+    fireEvent.click(within(btc).getByRole('button', { name: '折りたたむ' }));
+    expect(onLayoutAction).toHaveBeenCalledWith('BTC/USDT', 'toggleCollapsed');
+  });
+
+  it('保存した並び順で表示し、折りたたんだカードは見出しだけにする', () => {
+    renderDashboard(initialized, {
+      layout: { order: ['ETH/USDT', 'BTC/USDT'], collapsed: ['BTC/USDT'] },
+    });
+    const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+    expect(regions.slice(0, 2)).toEqual(['ETH/USDT', 'BTC/USDT']);
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    expect(within(btc).getByText('利益なし')).toBeTruthy();
+    expect(within(btc).queryByRole('table')).toBeNull();
+    expect(within(btc).getByRole('button', { name: '展開する' })).toBeTruthy();
   });
 });
 

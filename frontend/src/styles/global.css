@@ -127,9 +127,44 @@ h2 {
 
 .card__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 8px;
+}
+
+.card__header h2 {
+  margin-right: auto;
+}
+
+/* カードの操作（並び替え・折りたたみ・非表示）。普段は目立たせず、触れると浮き上がる */
+.card__tools {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.icon-button {
+  width: 1.8em;
+  height: 1.8em;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: GrayText;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icon-button:hover:not(:disabled),
+.icon-button:focus-visible {
+  border-color: var(--line);
+  color: CanvasText;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+}
+
+.icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .badge {

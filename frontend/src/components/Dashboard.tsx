@@ -1,4 +1,5 @@
 import { type Lang, useT } from '../i18n';
+import { isCollapsed, type LayoutAction, orderedPairs, type PairLayout } from '../state/layout';
 import type { FeedState } from '../state/reducer';
 import { AmountBar } from './AmountBar';
 import { FeeNote } from './FeeNote';
@@ -16,6 +17,8 @@ interface DashboardProps {
   /** 計算に使う取引金額（正の数に直したもの） */
   amount: string;
   onAmountChange: (value: string) => void;
+  layout: PairLayout;
+  onLayoutAction: (pair: string, action: LayoutAction) => void;
 }
 
 /**
@@ -29,8 +32,11 @@ export function Dashboard({
   amountInput,
   amount,
   onAmountChange,
+  layout,
+  onLayoutAction,
 }: DashboardProps) {
   const t = useT();
+  const ordered = orderedPairs(state.pairs, layout);
   // 取引金額の単位。通貨ペアはすべて同じ Quote 通貨（USDT）を前提に、先頭のペアから取る
   const quote = state.pairs[0]?.quote ?? 'USDT';
 
@@ -47,8 +53,17 @@ export function Dashboard({
           <Summary pairs={state.pairs} exchanges={state.exchanges} amount={amount} />
           <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
           <main className="boards">
-            {state.pairs.map((pair) => (
-              <PairBoard key={pair.pair} pair={pair} exchanges={state.exchanges} amount={amount} />
+            {ordered.map((pair, i) => (
+              <PairBoard
+                key={pair.pair}
+                pair={pair}
+                exchanges={state.exchanges}
+                amount={amount}
+                collapsed={isCollapsed(layout, pair.pair)}
+                canMoveUp={i > 0}
+                canMoveDown={i < ordered.length - 1}
+                onAction={onLayoutAction}
+              />
             ))}
           </main>
           <History history={state.history} exchanges={state.exchanges} amount={amount} />

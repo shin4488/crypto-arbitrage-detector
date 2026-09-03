@@ -27,6 +27,12 @@ export const ja = {
     `板で利益が出るのは ${quantity} ${base}（約 ${cost} ${quote}）まで`,
   depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
 
+  // カードの操作
+  moveUp: '上へ',
+  moveDown: '下へ',
+  collapse: '折りたたむ',
+  expand: '展開する',
+
   colExchange: '取引所',
   colSellPrice: '売値 (bid)',
   colBuyPrice: '買値 (ask)',
