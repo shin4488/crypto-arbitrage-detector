@@ -13,13 +13,7 @@ import { Dashboard } from './Dashboard';
 
 function renderDashboard(
   state: FeedState,
-  {
-    lang = 'ja' as Lang,
-    amount = '100',
-    onLangChange = vi.fn(),
-    onAmountChange = vi.fn(),
-    onTabNotificationChange = vi.fn(),
-  } = {},
+  { lang = 'ja' as Lang, amount = '100', onLangChange = vi.fn(), onAmountChange = vi.fn() } = {},
 ) {
   render(
     <LangContext.Provider value={lang}>
@@ -30,12 +24,10 @@ function renderDashboard(
         amountInput={amount}
         amount={amount}
         onAmountChange={onAmountChange}
-        tabNotification={false}
-        onTabNotificationChange={onTabNotificationChange}
       />
     </LangContext.Provider>,
   );
-  return { onLangChange, onAmountChange, onTabNotificationChange };
+  return { onLangChange, onAmountChange };
 }
 
 const initialized = reducer(reducer(initialState, { type: 'connection', status: 'connected' }), {
@@ -223,12 +215,6 @@ describe('Dashboard', () => {
       'https://www.okx.com/fees',
     ]);
     expect(links[0]?.getAttribute('rel')).toBe('noopener noreferrer');
-  });
-
-  it('タブ通知のトグルを切り替えると通知される', () => {
-    const { onTabNotificationChange } = renderDashboard(initialized);
-    fireEvent.click(screen.getByRole('checkbox', { name: 'タブに通知' }));
-    expect(onTabNotificationChange).toHaveBeenCalledWith(true);
   });
 
   it('言語を選ぶと通知され、選択中の言語が押された状態になる', () => {

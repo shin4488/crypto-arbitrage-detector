@@ -7,19 +7,10 @@ interface HeaderProps {
   exchanges: ExchangeInfo[];
   lang: Lang;
   onLangChange: (lang: Lang) => void;
-  tabNotification: boolean;
-  onTabNotificationChange: (enabled: boolean) => void;
 }
 
-/** タイトルと、右側に接続状態・言語・通知の設定 */
-export function Header({
-  connection,
-  exchanges,
-  lang,
-  onLangChange,
-  tabNotification,
-  onTabNotificationChange,
-}: HeaderProps) {
+/** タイトルと、右側に接続状態・言語の切り替え */
+export function Header({ connection, exchanges, lang, onLangChange }: HeaderProps) {
   const t = useT();
   const status = connectionSentence(connection, exchanges, t);
 
@@ -37,15 +28,6 @@ export function Header({
           ● {status.text}
         </span>
         <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
-        <label className="switch" title={t.tabTitleNotificationHelp}>
-          <input
-            type="checkbox"
-            checked={tabNotification}
-            onChange={(e) => onTabNotificationChange(e.target.checked)}
-          />
-          <span className="switch__track" aria-hidden="true" />
-          {t.tabTitleNotification}
-        </label>
       </div>
     </header>
   );

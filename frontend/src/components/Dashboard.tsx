@@ -16,8 +16,6 @@ interface DashboardProps {
   /** 計算に使う取引金額（正の数に直したもの） */
   amount: string;
   onAmountChange: (value: string) => void;
-  tabNotification: boolean;
-  onTabNotificationChange: (enabled: boolean) => void;
 }
 
 /**
@@ -31,8 +29,6 @@ export function Dashboard({
   amountInput,
   amount,
   onAmountChange,
-  tabNotification,
-  onTabNotificationChange,
 }: DashboardProps) {
   const t = useT();
   // 取引金額の単位。通貨ペアはすべて同じ Quote 通貨（USDT）を前提に、先頭のペアから取る
@@ -45,8 +41,6 @@ export function Dashboard({
         exchanges={state.exchanges}
         lang={lang}
         onLangChange={onLangChange}
-        tabNotification={tabNotification}
-        onTabNotificationChange={onTabNotificationChange}
       />
       {state.initialized ? (
         <>

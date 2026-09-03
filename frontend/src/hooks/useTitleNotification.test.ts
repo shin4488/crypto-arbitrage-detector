@@ -3,18 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { useTitleNotification } from './useTitleNotification';
 
 describe('useTitleNotification', () => {
-  it('有効で機会があればタイトルに目印を付ける', () => {
+  it('利益が出ている間はタイトルに目印を付け、無くなれば戻す', () => {
     const { rerender, unmount } = renderHook(
-      ({ enabled, summary }) => useTitleNotification(enabled, summary, 'App'),
-      { initialProps: { enabled: true, summary: 'BTC +1.23' as string | null } },
+      ({ summary }) => useTitleNotification(summary, 'App'),
+      { initialProps: { summary: 'BTC +1.23' as string | null } },
     );
     expect(document.title).toBe('● BTC +1.23 | App');
 
-    rerender({ enabled: true, summary: null });
+    rerender({ summary: null });
     expect(document.title).toBe('App');
 
-    rerender({ enabled: false, summary: 'BTC +1.23' });
-    expect(document.title).toBe('App');
+    rerender({ summary: 'ETH +0.45' });
+    expect(document.title).toBe('● ETH +0.45 | App');
 
     unmount();
     expect(document.title).toBe('App');

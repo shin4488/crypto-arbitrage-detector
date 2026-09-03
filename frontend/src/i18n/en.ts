@@ -5,9 +5,6 @@ export const en: Dict = {
   appDescription: 'Finds cross-exchange trades that are still profitable after fees',
   language: 'Language',
 
-  tabTitleNotification: 'Tab alert',
-  tabTitleNotificationHelp: 'Also shows the opportunity in the browser tab title while it lasts',
-
   statusConnecting: 'Connecting to the server…',
   statusServerDisconnected: 'Lost connection to the server. Reconnecting…',
   statusExchangeDisconnected: (names: string) => `Lost connection to ${names}. Reconnecting…`,

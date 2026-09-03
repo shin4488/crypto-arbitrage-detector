@@ -4,9 +4,6 @@ export const ja = {
   appDescription: '取引所間の価格差から、手数料を引いても利益が出る取引を見つけます',
   language: '言語',
 
-  tabTitleNotification: 'タブに通知',
-  tabTitleNotificationHelp: '利益が出ている間、ブラウザのタブのタイトルにも表示します',
-
   // 接続状態（画面上部の1行）
   statusConnecting: 'サーバーに接続中…',
   statusServerDisconnected: 'サーバーとの接続が切れました。再接続中…',

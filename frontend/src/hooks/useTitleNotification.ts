@@ -1,18 +1,14 @@
 import { useEffect } from 'react';
 
 /**
- * 機会がある間、タブのタイトルに目印を出す。
- * enabled が false か summary が null なら元のタイトルに戻す。
+ * 利益が出ている間、タブのタイトルに目印を出す。summary が null なら元のタイトルに戻す。
+ * document.title を書き換えるだけで、summary が変わったときにしか動かない。
  */
-export function useTitleNotification(
-  enabled: boolean,
-  summary: string | null,
-  baseTitle: string,
-): void {
+export function useTitleNotification(summary: string | null, baseTitle: string): void {
   useEffect(() => {
-    document.title = enabled && summary ? `● ${summary} | ${baseTitle}` : baseTitle;
+    document.title = summary ? `● ${summary} | ${baseTitle}` : baseTitle;
     return () => {
       document.title = baseTitle;
     };
-  }, [enabled, summary, baseTitle]);
+  }, [summary, baseTitle]);
 }
