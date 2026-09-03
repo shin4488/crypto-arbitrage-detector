@@ -1,7 +1,8 @@
-import { memo, type ReactNode } from 'react';
+import { type DragEvent, type KeyboardEvent, memo, type ReactNode, useState } from 'react';
 import { formatDecimal, multiplyDecimals, quantityFractionDigits } from '../format/number';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
+import type { LayoutAction } from '../state/layout';
 import { bestDirection, exchangeName } from '../state/selectors';
 import { planForAmount } from '../state/trade';
 import { Age } from './Age';
@@ -12,6 +13,15 @@ interface PairBoardProps {
   exchanges: ExchangeInfo[];
   /** 取引金額（Quote 通貨建て、正の数） */
   amount: string;
+  /** このカードをドラッグ中 */
+  dragging: boolean;
+  /** ドラッグ中のカードをここに落とせる位置として示す */
+  dropTarget: boolean;
+  onAction: (action: LayoutAction) => void;
+  onDragStart: (pair: string) => void;
+  onDragOver: (pair: string) => void;
+  onDrop: (pair: string) => void;
+  onDragEnd: () => void;
 }
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
@@ -20,11 +30,22 @@ const PRICE_DIGITS = 8;
 const AMOUNT_DIGITS = 4;
 
 /**
- * 1つの通貨ペアの枠。上から「今の状態 → 方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式 → 各取引所の買値・売値」の順。
- * 板に並ぶ数量や逆方向の値は売買の判断に使わないので出さない。
+ * 1つの通貨ペアの枠。上に「方向と、取引金額ぶんの『価格差 − 手数料 ＝ 差引』の式」、下に「各取引所の買値・売値」。
+ * 左上の取っ手をつかんでドラッグすると並び替えられ（取っ手にフォーカスして ↑↓ でも動かせる）、右上の目で隠せる。
  * memo にしているのは、別のペアが更新されたときに描き直さないようにするため（更新は秒間数十回ある）。
  */
-export const PairBoard = memo(function PairBoard({ pair, exchanges, amount }: PairBoardProps) {
+export const PairBoard = memo(function PairBoard({
+  pair,
+  exchanges,
+  amount,
+  dragging,
+  dropTarget,
+  onAction,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: PairBoardProps) {
   const t = useT();
   const best = bestDirection(pair);
   const hasQuotes = Object.keys(pair.quotes).length > 0;
@@ -33,29 +54,108 @@ export const PairBoard = memo(function PairBoard({ pair, exchanges, amount }: Pa
     : hasQuotes
       ? { className: 'muted', text: t.badgeNone }
       : { className: 'muted', text: t.badgeWaiting };
+  // 取っ手を押している間だけカードをドラッグ可能にする（本文の選択やリンク操作を邪魔しないため）
+  const [armed, setArmed] = useState(false);
+
+  const handleKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      onAction({ type: 'moveBy', pair: pair.pair, delta: e.key === 'ArrowUp' ? -1 : 1 });
+    }
+  };
+  // dataTransfer はブラウザでは必ずあるが、テスト環境（jsdom）では無いので存在を確かめてから使う
+  const handleDragStart = (e: DragEvent<HTMLElement>) => {
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', pair.pair);
+    }
+    onDragStart(pair.pair);
+  };
+  const handleDragOver = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault(); // preventDefault しないと drop が発火しない
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    onDragOver(pair.pair);
+  };
+  const handleDrop = (e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    onDrop(pair.pair);
+  };
 
   return (
     <section
-      className={`card ${best?.profitable ? 'card--profitable' : ''}`}
+      className={`card ${best?.profitable ? 'card--profitable' : ''} ${dragging ? 'is-dragging' : ''} ${dropTarget ? 'is-drop-target' : ''}`}
       aria-label={pair.pair}
+      draggable={armed}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragEnd={() => {
+        setArmed(false);
+        onDragEnd();
+      }}
     >
       <header className="card__header">
+        <button
+          type="button"
+          className="drag-handle"
+          aria-label={t.dragToReorder}
+          title={t.dragToReorder}
+          onMouseDown={() => setArmed(true)}
+          onMouseUp={() => setArmed(false)}
+          onKeyDown={handleKey}
+        >
+          ⋮⋮
+        </button>
         <h2>{pair.pair}</h2>
         <span className={badge.className}>{badge.text}</span>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={t.hidePair}
+          title={t.hidePair}
+          onClick={() => onAction({ type: 'toggleHidden', pair: pair.pair })}
+        >
+          <EyeOffIcon />
+        </button>
       </header>
 
-      {!hasQuotes ? (
-        <p className="muted">{t.waitingForData}</p>
-      ) : best === null ? (
-        <p className="muted">{t.notEvaluable}</p>
-      ) : (
-        <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
-      )}
-
-      {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
+      <div className="card__body">
+        {!hasQuotes ? (
+          <p className="muted">{t.waitingForData}</p>
+        ) : best === null ? (
+          <p className="muted">{t.notEvaluable}</p>
+        ) : (
+          <Verdict direction={best} pair={pair} exchanges={exchanges} amount={amount} />
+        )}
+        {hasQuotes && <QuoteTable pair={pair} exchanges={exchanges} best={best} />}
+      </div>
     </section>
   );
 });
+
+/** 「隠す」の目のアイコン。アイコン集を依存に足すほどではないので、この1つだけ手で描いている */
+function EyeOffIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="1.1em"
+      height="1.1em"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 3l18 18" />
+      <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+      <path d="M9.9 5.2A10 10 0 0 1 12 5c5 0 9 4 10 7a11 11 0 0 1-2.7 3.9" />
+      <path d="M6.6 6.6C4.4 8 2.8 10 2 12c1 3 5 7 10 7a9.5 9.5 0 0 0 4.1-.9" />
+    </svg>
+  );
+}
 
 interface VerdictProps {
   direction: Direction;
@@ -98,8 +198,8 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
         <Figure label={t.rowNet} className={d.profitable ? 'pos' : 'neg'}>
           <Flash value={plan.net}>{money(plan.net)}</Flash>
         </Figure>
-        <span className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</span>
       </p>
+      <p className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</p>
       {plan.capped && (
         <p className="warn small">
           {t.capped(quantity, pair.base, cost, pair.quote)}

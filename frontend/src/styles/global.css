@@ -58,7 +58,7 @@ h2 {
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  gap: 32px;
+  gap: 36px;
 }
 
 .muted {
@@ -103,21 +103,28 @@ h2 {
   gap: 12px 24px;
 }
 
+/* カードは PC では2列、入りきらない幅では1列。列の間も広めに取って密集して見えないようにする */
 .boards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 470px), 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 28px;
+}
+
+/* カードの中は上に方向と式、下に買値・売値の表 */
+.card__body {
+  display: grid;
+  gap: 22px;
 }
 
 .card {
   min-width: 0; /* 中の表の幅に引っ張られて枠からはみ出さないようにする */
   align-content: start; /* 横に並んだ枠の高さがそろうとき、中身が縦に間延びしないようにする */
-  padding: 24px 24px 26px;
+  padding: 26px 28px 28px;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px color-mix(in srgb, CanvasText 8%, transparent);
   display: grid;
-  gap: 20px;
+  gap: 22px;
 }
 
 .card--profitable {
@@ -127,9 +134,69 @@ h2 {
 
 .card__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 8px;
+}
+
+.card__header h2 {
+  margin-right: auto;
+}
+
+/* ドラッグ用の取っ手。ここをつかむとカードを動かせる */
+.drag-handle {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--buy) 12%, transparent);
+  color: var(--buy);
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: -0.15em;
+  line-height: 1;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.card.is-dragging {
+  opacity: 0.5;
+}
+
+.card.is-drop-target {
+  outline: 2px solid var(--buy);
+  outline-offset: 2px;
+}
+
+.icon-button {
+  width: 1.8em;
+  height: 1.8em;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: GrayText;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icon-button svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.icon-button:hover:not(:disabled),
+.icon-button:focus-visible {
+  border-color: var(--line);
+  color: CanvasText;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+}
+
+.icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .badge {
@@ -184,7 +251,7 @@ table {
 
 th,
 td {
-  padding: 10px 10px;
+  padding: 11px 10px;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
@@ -270,6 +337,58 @@ tr.detail td {
   border-color: var(--neg);
 }
 
+/* 取引金額と表示するペア。カードの見え方を決める設定なので、まとめてカードのすぐ上に置く */
+.toolbar {
+  display: grid;
+  gap: 16px;
+}
+
+/* 表示するペアの切り替え。選んでいるペアだけ買い色の青で塗る（画面の他の青と同じ意味合いの「選択中」） */
+.pair-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0; /* fieldset は既定で中身より狭くならず、狭い画面で折り返さなくなるため */
+}
+
+/* legend は既定では枠線の上に置かれてチップと並ばない。float にすると通常の子要素として並ぶ */
+.pair-filter legend {
+  float: left;
+  padding: 0;
+  color: GrayText;
+}
+
+.chip {
+  padding: 5px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: GrayText;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--buy);
+  background: var(--buy-bg);
+  color: var(--buy);
+  font-weight: 600;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: currentColor;
+}
+
+.chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* 言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
 .segmented {
   display: inline-flex;
@@ -297,14 +416,14 @@ tr.detail td {
 
 .verdict {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
-/* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */
-.equation,
-.figures {
+/* 数字の下にラベルを添えた項目を横に並べた式（価格差 − 手数料 ＝ 差引） */
+.equation {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center; /* 式はカードの主役なので横方向の中央に置く */
   align-items: center;
   gap: 8px 20px;
 }

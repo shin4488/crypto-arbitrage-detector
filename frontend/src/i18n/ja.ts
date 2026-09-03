@@ -27,6 +27,13 @@ export const ja = {
     `板で利益が出るのは ${quantity} ${base}（約 ${cost} ${quote}）まで`,
   depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
 
+  // カードの操作
+  dragToReorder: 'ドラッグして並び替え（↑↓キーでも動かせます）',
+  hidePair: 'このペアを隠す',
+  showPairs: '表示するペア',
+  showAll: 'すべて表示',
+  noVisiblePairs: '表示するペアがありません。上の「表示するペア」から選んでください',
+
   colExchange: '取引所',
   colSellPrice: '売値 (bid)',
   colBuyPrice: '買値 (ask)',

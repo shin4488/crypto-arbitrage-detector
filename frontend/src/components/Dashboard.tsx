@@ -1,10 +1,13 @@
+import { useCallback, useState } from 'react';
 import { type Lang, useT } from '../i18n';
+import { type LayoutAction, orderedPairs, type PairLayout, visiblePairs } from '../state/layout';
 import type { FeedState } from '../state/reducer';
 import { AmountBar } from './AmountBar';
 import { FeeNote } from './FeeNote';
 import { Header } from './Header';
 import { History } from './History';
 import { PairBoard } from './PairBoard';
+import { PairFilter } from './PairFilter';
 import { Summary } from './Summary';
 
 interface DashboardProps {
@@ -16,6 +19,8 @@ interface DashboardProps {
   /** 計算に使う取引金額（正の数に直したもの） */
   amount: string;
   onAmountChange: (value: string) => void;
+  layout: PairLayout;
+  onLayoutAction: (action: LayoutAction) => void;
 }
 
 /**
@@ -29,8 +34,31 @@ export function Dashboard({
   amountInput,
   amount,
   onAmountChange,
+  layout,
+  onLayoutAction,
 }: DashboardProps) {
   const t = useT();
+  const ordered = orderedPairs(state.pairs, layout);
+  const visible = visiblePairs(state.pairs, layout);
+  // ドラッグ＆ドロップの途中経過。落とした時点で layout に反映する
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const handleDragStart = useCallback((pair: string) => setDragging(pair), []);
+  const handleDragOver = useCallback((pair: string) => setDropTarget(pair), []);
+  const handleDragEnd = useCallback(() => {
+    setDragging(null);
+    setDropTarget(null);
+  }, []);
+  const handleDrop = useCallback(
+    (target: string) => {
+      if (dragging !== null && dragging !== target) {
+        onLayoutAction({ type: 'moveTo', pair: dragging, target });
+      }
+      setDragging(null);
+      setDropTarget(null);
+    },
+    [dragging, onLayoutAction],
+  );
   // 取引金額の単位。通貨ペアはすべて同じ Quote 通貨（USDT）を前提に、先頭のペアから取る
   const quote = state.pairs[0]?.quote ?? 'USDT';
 
@@ -45,10 +73,26 @@ export function Dashboard({
       {state.initialized ? (
         <>
           <Summary pairs={state.pairs} exchanges={state.exchanges} amount={amount} />
-          <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
+          <div className="toolbar">
+            <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
+            <PairFilter pairs={ordered} layout={layout} onAction={onLayoutAction} />
+          </div>
           <main className="boards">
-            {state.pairs.map((pair) => (
-              <PairBoard key={pair.pair} pair={pair} exchanges={state.exchanges} amount={amount} />
+            {visible.length === 0 && <p className="muted">{t.noVisiblePairs}</p>}
+            {visible.map((pair) => (
+              <PairBoard
+                key={pair.pair}
+                pair={pair}
+                exchanges={state.exchanges}
+                amount={amount}
+                dragging={dragging === pair.pair}
+                dropTarget={dropTarget === pair.pair && dragging !== pair.pair}
+                onAction={onLayoutAction}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+              />
             ))}
           </main>
           <History history={state.history} exchanges={state.exchanges} amount={amount} />

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { type Lang, LangContext } from '../i18n';
+import { emptyLayout, type PairLayout } from '../state/layout';
 import { type FeedState, initialState, reducer } from '../state/reducer';
 import {
   episodeFixture,
@@ -13,7 +14,14 @@ import { Dashboard } from './Dashboard';
 
 function renderDashboard(
   state: FeedState,
-  { lang = 'ja' as Lang, amount = '100', onLangChange = vi.fn(), onAmountChange = vi.fn() } = {},
+  {
+    lang = 'ja' as Lang,
+    amount = '100',
+    onLangChange = vi.fn(),
+    onAmountChange = vi.fn(),
+    layout = emptyLayout as PairLayout,
+    onLayoutAction = vi.fn(),
+  } = {},
 ) {
   render(
     <LangContext.Provider value={lang}>
@@ -24,10 +32,12 @@ function renderDashboard(
         amountInput={amount}
         amount={amount}
         onAmountChange={onAmountChange}
+        layout={layout}
+        onLayoutAction={onLayoutAction}
       />
     </LangContext.Provider>,
   );
-  return { onLangChange, onAmountChange };
+  return { onLangChange, onAmountChange, onLayoutAction };
 }
 
 const initialized = reducer(reducer(initialState, { type: 'connection', status: 'connected' }), {
@@ -229,6 +239,74 @@ describe('Dashboard', () => {
     renderDashboard(initialized, { lang: 'en' });
     expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
+  });
+  it('取っ手のドラッグ＆ドロップで並び替え、キーボードの ↑↓ でも動かせる', () => {
+    const { onLayoutAction } = renderDashboard(initialized);
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    const eth = screen.getByRole('region', { name: 'ETH/USDT' });
+    const handle = within(btc).getByRole('button', { name: /ドラッグして並び替え/ });
+    // ドラッグして ETH の位置に落とす
+    fireEvent.dragStart(btc);
+    fireEvent.dragOver(eth);
+    expect(eth.className).toContain('is-drop-target');
+    fireEvent.drop(eth);
+    expect(onLayoutAction).toHaveBeenCalledWith({
+      type: 'moveTo',
+      pair: 'BTC/USDT',
+      target: 'ETH/USDT',
+    });
+    // キーボード
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: 1 });
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: -1 });
+  });
+
+  it('保存した並び順でカードを並べる', () => {
+    renderDashboard(initialized, { layout: { order: ['ETH/USDT', 'BTC/USDT'], hidden: [] } });
+    const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));
+    expect(regions.slice(0, 2)).toEqual(['ETH/USDT', 'BTC/USDT']);
+  });
+
+  it('「表示するペア」のチップとカードの「隠す」で表示を切り替え、「すべて表示」で戻せる', () => {
+    const { onLayoutAction } = renderDashboard(initialized, {
+      layout: { order: [], hidden: ['ETH/USDT'] },
+    });
+    const filter = screen.getByRole('group', { name: /表示するペア/ });
+    const chips = within(filter).getAllByRole('button');
+    expect(chips.map((c) => [c.textContent, c.getAttribute('aria-pressed')])).toEqual([
+      ['BTC/USDT', 'true'],
+      ['ETH/USDT', 'false'],
+      ['すべて表示', null],
+    ]);
+    // 隠したペアのカードは出ない
+    expect(screen.queryByRole('region', { name: 'ETH/USDT' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'BTC/USDT' })).toBeTruthy();
+
+    fireEvent.click(within(filter).getByRole('button', { name: 'ETH/USDT' }));
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'toggleHidden', pair: 'ETH/USDT' });
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    fireEvent.click(within(btc).getByRole('button', { name: 'このペアを隠す' }));
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'toggleHidden', pair: 'BTC/USDT' });
+    fireEvent.click(within(filter).getByRole('button', { name: 'すべて表示' }));
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'showAll' });
+  });
+
+  it('何も隠していなければ「すべて表示」は押せない', () => {
+    renderDashboard(initialized);
+    expect(screen.getByRole('button', { name: 'すべて表示' })).toHaveProperty('disabled', true);
+  });
+
+  it('隠したペアでも、利益が出ればまとめの帯には出る（見落とさないため）', () => {
+    renderDashboard(withOpportunity, { layout: { order: [], hidden: ['BTC/USDT'] } });
+    expect(screen.queryByRole('region', { name: 'BTC/USDT' })).toBeNull();
+    expect(document.querySelector('.summary--profitable')?.textContent).toContain('BTC/USDT');
+  });
+
+  it('すべて隠すと、選び直し方を案内する', () => {
+    renderDashboard(initialized, { layout: { order: [], hidden: ['BTC/USDT', 'ETH/USDT'] } });
+    expect(screen.queryByRole('region', { name: /USDT/ })).toBeNull();
+    expect(screen.getByText(/表示するペアがありません/)).toBeTruthy();
   });
 });
 

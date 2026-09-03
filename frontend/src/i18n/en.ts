@@ -26,6 +26,12 @@ export const en: Dict = {
     `Only ${quantity} ${base} (≈ ${cost} ${quote}) is profitable at the current depth`,
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
+  dragToReorder: 'Drag to reorder (or use the ↑↓ keys)',
+  hidePair: 'Hide this pair',
+  showPairs: 'Show pairs',
+  showAll: 'Show all',
+  noVisiblePairs: 'No pairs shown. Pick some under "Show pairs" above',
+
   colExchange: 'Exchange',
   colSellPrice: 'Sell (bid)',
   colBuyPrice: 'Buy (ask)',
