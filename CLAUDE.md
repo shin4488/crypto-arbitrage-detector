@@ -5,7 +5,7 @@ Claude Code がこのリポジトリで作業するときの手引き。
 ## 何をするものか
 
 Binance と OKX の板を突き合わせ、手数料を引いても利益が残る裁定の機会を見つけて表示する。注文は出さない。
-対象は BTC / ETH / XRP / SHIB / DOGE の各 USDT ペア（設定で増減できる）。
+対象は BTC / ETH / XRP / SHIB / DOGE の各 USDT ペア（`backend/config.json` の `pairs` で増減できる）。
 仕様・構成・動かし方は README.md にまとめてある。
 
 - `backend/`: Go。取引所との WebSocket 接続、検知、配信、フロントエンドの埋め込み配信
@@ -53,8 +53,9 @@ make fmt / make test / make lint / make up / make dev
 - `internal/server`: クライアントごとの送信箱（同じ対象は最新だけ残す）で、遅いクライアントをほかから切り離す
 - `internal/exchange/wsclient`: 再接続・keep-alive・受信タイムアウトの共通処理。取引所ごとの違いは `binance/`、`okx/` に閉じ込める
 - `internal/wire`: 配信 JSON の形式。フロントの `src/protocol/types.ts` と対応させる
+- `backend/config.json`: 設定の唯一の置き場。モジュール直下の `embed.go` でバイナリに埋め込み、`internal/config` が読む。本番相当（docker compose）でも開発（make dev）でも、編集して起動し直すだけで反映される
 - 取引所を増やす: `internal/exchange/<name>/` に `exchange.Feed` を実装して `registry` に登録する
-- 通貨ペアを増やす: 設定の `pairs` に足すだけ
+- 通貨ペアを増やす: `backend/config.json` の `pairs` に足して起動し直すだけ。コードにペアの一覧を書かない（`config.Default()` はこのファイルを埋め込んだもの）
 
 ## 変更したら確かめること
 
