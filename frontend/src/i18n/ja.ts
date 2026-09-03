@@ -19,7 +19,6 @@ export const ja = {
   badgeProfitable: '利益あり',
   badgeNone: '利益なし',
   badgeWaiting: 'データ待ち',
-  bestDirection: '有利な方向',
   rowSpread: '価格差',
   rowFees: '手数料',
   rowNet: '差引',

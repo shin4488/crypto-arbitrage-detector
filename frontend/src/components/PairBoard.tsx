@@ -68,7 +68,6 @@ function Verdict({ direction: d, pair, exchanges }: VerdictProps) {
   return (
     <div className="verdict">
       <p>
-        {!d.profitable && <span className="muted small">{t.bestDirection} </span>}
         <strong>
           <span className="buy">{t.buyOn(exchangeName(exchanges, d.buyExchange))}</span>
           {' → '}

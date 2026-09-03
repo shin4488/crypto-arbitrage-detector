@@ -86,14 +86,13 @@ describe('Dashboard', () => {
     expect(summary).toHaveTextContent('+0.2397 USDT');
   });
 
-  it('利益が出ないペアは、有利な方向を式で示し、利益までの距離を1行で出す', () => {
+  it('利益が出ないペアは、より有利な方向を式で示す', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('利益なし')).toBeTruthy();
     expect(within(btc).getByText('Binanceで買い').closest('strong')).toHaveTextContent(
       'Binanceで買い → OKXで売り',
     );
-    expect(within(btc).getByText('有利な方向')).toBeTruthy();
     // 価格差 +3.04 − 手数料 130.87 = 差引 −127.83（USDT / 1 BTC）
     expect(within(btc).getByText('+3.04')).toBeTruthy();
     expect(within(btc).getByText('130.87')).toBeTruthy();
@@ -109,7 +108,6 @@ describe('Dashboard', () => {
     expect(within(btc).getByText('OKXで買い').closest('strong')).toHaveTextContent(
       'OKXで買い → Binanceで売り',
     );
-    expect(within(btc).queryByText('有利な方向')).toBeNull();
     expect(within(btc).getByText('0.3 BTC')).toBeTruthy();
     expect(within(btc).getByText('+0.2397 USDT')).toBeTruthy();
     // 価格差 +1 − 手数料 0.2 = 差引 +0.8（価格の刻みに合わせて小数2桁）
@@ -126,7 +124,7 @@ describe('Dashboard', () => {
       .getAllByRole('columnheader')
       .map((th) => th.textContent);
     expect(headers).toEqual(['取引所', '買値 (ask)', '売値 (bid)', '更新']);
-    // 有利な方向は Binance で買い → OKX で売り: Binance の買値と OKX の売値に色が付く
+    // より有利なのは Binance で買い → OKX で売り: Binance の買値と OKX の売値に色が付く
     const buyCell = within(btc).getByText('65,433.8').closest('td');
     const sellCell = within(btc).getByText('65,436.84').closest('td');
     expect(buyCell?.className).toContain('pick--buy');

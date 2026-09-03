@@ -58,7 +58,7 @@ h2 {
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  gap: 22px;
+  gap: 26px;
 }
 
 .muted {
@@ -112,12 +112,12 @@ h2 {
 .card {
   min-width: 0; /* 中の表の幅に引っ張られて枠からはみ出さないようにする */
   align-content: start; /* 横に並んだ枠の高さがそろうとき、中身が縦に間延びしないようにする */
-  padding: 18px 20px;
+  padding: 20px 20px 22px;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px color-mix(in srgb, CanvasText 8%, transparent);
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .card--profitable {
@@ -184,7 +184,7 @@ table {
 
 th,
 td {
-  padding: 7px 10px;
+  padding: 8px 10px;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
@@ -211,7 +211,7 @@ tr.detail td {
 }
 
 .status {
-  margin-top: 14px;
+  margin-top: 16px;
   font-weight: 600;
 }
 
@@ -315,7 +315,7 @@ tr.detail td {
 
 .verdict {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 /* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */

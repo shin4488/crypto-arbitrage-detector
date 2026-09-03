@@ -18,7 +18,6 @@ export const en: Dict = {
   badgeProfitable: 'Profitable',
   badgeNone: 'Not profitable',
   badgeWaiting: 'Waiting for data',
-  bestDirection: 'Better direction',
   rowSpread: 'Price gap',
   rowFees: 'Fees',
   rowNet: 'Net',
