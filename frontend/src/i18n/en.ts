@@ -22,6 +22,7 @@ export const en: Dict = {
   rowFees: 'Fees',
   rowNet: 'Net',
   tradeAmount: 'Trade amount',
+  tradeAmountHelp: 'The price gap, fees, and net below are calculated for a trade of this amount',
   forAmount: (quantity: string, base: string, cost: string, quote: string) =>
     `${quantity} ${base} ≈ ${cost} ${quote}`,
   capped: (quantity: string, base: string, cost: string, quote: string) =>

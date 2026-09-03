@@ -58,7 +58,7 @@ h2 {
   max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  gap: 26px;
+  gap: 32px;
 }
 
 .muted {
@@ -112,12 +112,12 @@ h2 {
 .card {
   min-width: 0; /* 中の表の幅に引っ張られて枠からはみ出さないようにする */
   align-content: start; /* 横に並んだ枠の高さがそろうとき、中身が縦に間延びしないようにする */
-  padding: 20px 20px 22px;
+  padding: 24px 24px 26px;
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 1px 3px color-mix(in srgb, CanvasText 8%, transparent);
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
 .card--profitable {
@@ -184,7 +184,7 @@ table {
 
 th,
 td {
-  padding: 8px 10px;
+  padding: 10px 10px;
   text-align: left;
   border-bottom: 1px solid var(--line);
 }
@@ -211,7 +211,6 @@ tr.detail td {
 }
 
 .status {
-  margin-top: 16px;
   font-weight: 600;
 }
 
@@ -235,24 +234,34 @@ tr.detail td {
   display: flex;
   align-items: center;
   gap: 20px;
+  flex-wrap: wrap;
 }
 
-/* 取引金額の入力欄 */
+/* 取引金額の行。各ペアの計算に効く設定なので、カードのすぐ上に置く */
+.amount-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
 .amount {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .amount input {
-  width: 6.5em;
-  padding: 4px 8px;
+  width: 7em;
+  padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: Canvas;
   color: CanvasText;
   font: inherit;
+  font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -339,7 +348,7 @@ tr.detail td {
 
 .verdict {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 /* 数字の下にラベルを添えた項目を横に並べる。式（価格差 − 手数料 = 手数料込み）にも使う */
@@ -399,19 +408,35 @@ tr.detail td {
 }
 
 .info__button {
-  width: 1.3em;
-  height: 1.3em;
-  padding: 0;
-  border: 1px solid currentColor;
-  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   background: none;
-  color: inherit;
+  color: CanvasText;
   font: inherit;
-  font-size: 0.8em;
-  font-weight: 700;
-  line-height: 1;
+  font-size: 0.9rem;
   cursor: pointer;
-  vertical-align: 0.1em;
+}
+
+.info__button:hover,
+.info__button[aria-expanded="true"] {
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+}
+
+.info__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50%;
+  background: var(--buy);
+  color: Canvas;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, serif;
 }
 
 .info__popover {

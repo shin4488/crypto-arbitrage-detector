@@ -23,11 +23,13 @@ export function FeeNote({ exchanges }: FeeNoteProps) {
         <button
           type="button"
           className="info__button"
-          aria-label={t.feeInfoLabel}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          i
+          <span className="info__icon" aria-hidden="true">
+            i
+          </span>
+          {t.feeInfoLabel}
         </button>
         <span className={`info__popover ${open ? 'is-open' : ''}`} role="tooltip">
           <strong>{t.feeInfoTitle}</strong>

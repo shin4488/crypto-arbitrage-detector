@@ -1,5 +1,6 @@
 import { type Lang, useT } from '../i18n';
 import type { FeedState } from '../state/reducer';
+import { AmountBar } from './AmountBar';
 import { FeeNote } from './FeeNote';
 import { Header } from './Header';
 import { History } from './History';
@@ -44,15 +45,13 @@ export function Dashboard({
         exchanges={state.exchanges}
         lang={lang}
         onLangChange={onLangChange}
-        amountInput={amountInput}
-        quote={quote}
-        onAmountChange={onAmountChange}
         tabNotification={tabNotification}
         onTabNotificationChange={onTabNotificationChange}
       />
       {state.initialized ? (
         <>
           <Summary pairs={state.pairs} exchanges={state.exchanges} amount={amount} />
+          <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
           <main className="boards">
             {state.pairs.map((pair) => (
               <PairBoard key={pair.pair} pair={pair} exchanges={state.exchanges} amount={amount} />

@@ -1,4 +1,3 @@
-import { signOf } from '../format/number';
 import { type Lang, useT } from '../i18n';
 import type { ExchangeInfo } from '../protocol/types';
 import type { ConnectionStatus } from '../state/reducer';
@@ -8,22 +7,16 @@ interface HeaderProps {
   exchanges: ExchangeInfo[];
   lang: Lang;
   onLangChange: (lang: Lang) => void;
-  amountInput: string;
-  quote: string;
-  onAmountChange: (value: string) => void;
   tabNotification: boolean;
   onTabNotificationChange: (enabled: boolean) => void;
 }
 
-/** タイトル、取引金額・言語・通知の設定、接続状態の1行 */
+/** タイトルと、右側に接続状態・言語・通知の設定 */
 export function Header({
   connection,
   exchanges,
   lang,
   onLangChange,
-  amountInput,
-  quote,
-  onAmountChange,
   tabNotification,
   onTabNotificationChange,
 }: HeaderProps) {
@@ -31,44 +24,29 @@ export function Header({
   const status = connectionSentence(connection, exchanges, t);
 
   return (
-    <header>
-      <div className="header">
-        <div className="brand">
-          <img src="/favicon.svg" alt="" width="36" height="36" />
-          <div>
-            <h1>{t.appTitle}</h1>
-            <p className="muted">{t.appDescription}</p>
-          </div>
-        </div>
-        <div className="controls">
-          <label className="amount">
-            {t.tradeAmount}
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="any"
-              value={amountInput}
-              aria-invalid={signOf(amountInput) !== 1}
-              onChange={(e) => onAmountChange(e.target.value)}
-            />
-            <span className="muted">{quote}</span>
-          </label>
-          <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
-          <label className="switch" title={t.tabTitleNotificationHelp}>
-            <input
-              type="checkbox"
-              checked={tabNotification}
-              onChange={(e) => onTabNotificationChange(e.target.checked)}
-            />
-            <span className="switch__track" aria-hidden="true" />
-            {t.tabTitleNotification}
-          </label>
+    <header className="header">
+      <div className="brand">
+        <img src="/favicon.svg" alt="" width="36" height="36" />
+        <div>
+          <h1>{t.appTitle}</h1>
+          <p className="muted">{t.appDescription}</p>
         </div>
       </div>
-      <p className={`status ${status.ok ? 'pos' : 'warn'}`} role="status">
-        ● {status.text}
-      </p>
+      <div className="controls">
+        <span className={`status ${status.ok ? 'pos' : 'warn'}`} role="status">
+          ● {status.text}
+        </span>
+        <LangSwitch lang={lang} onChange={onLangChange} label={t.language} />
+        <label className="switch" title={t.tabTitleNotificationHelp}>
+          <input
+            type="checkbox"
+            checked={tabNotification}
+            onChange={(e) => onTabNotificationChange(e.target.checked)}
+          />
+          <span className="switch__track" aria-hidden="true" />
+          {t.tabTitleNotification}
+        </label>
+      </div>
     </header>
   );
 }
