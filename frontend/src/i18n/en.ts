@@ -40,7 +40,7 @@ export const en: Dict = {
   historyTitle: 'Detections',
   historyCount: (n: number) => (n === 1 ? '1 entry' : `${n} entries`),
   historyEmpty: 'Nothing detected yet',
-  historyHelp: 'One entry per profitable period (cleared when the server restarts)',
+  historyHelp: 'One entry per profitable period',
   colTime: 'Time',
   colPair: 'Pair',
   colTrade: 'Trade',

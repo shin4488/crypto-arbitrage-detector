@@ -42,7 +42,7 @@ export const ja = {
   historyTitle: '検知履歴',
   historyCount: (n: number) => `${n}件`,
   historyEmpty: '検知はまだありません',
-  historyHelp: '利益が出ていた期間を1件として記録します（サーバーを再起動すると消えます）',
+  historyHelp: '利益が出ていた期間を1件として記録します',
   colTime: '時刻',
   colPair: '通貨ペア',
   colTrade: '取引',
