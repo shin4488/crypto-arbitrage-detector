@@ -1,5 +1,6 @@
-import { type DragEvent, type KeyboardEvent, memo, type ReactNode, useState } from 'react';
+import { type KeyboardEvent, memo, type ReactNode, useState } from 'react';
 import { formatDecimal, multiplyDecimals, quantityFractionDigits } from '../format/number';
+import { type DragHandlers, dragEvents } from '../hooks/useDragReorder';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
 import type { LayoutAction } from '../state/layout';
@@ -18,10 +19,8 @@ interface PairBoardProps {
   /** ドラッグ中のカードをここに落とせる位置として示す */
   dropTarget: boolean;
   onAction: (action: LayoutAction) => void;
-  onDragStart: (pair: string) => void;
-  onDragOver: (pair: string) => void;
-  onDrop: (pair: string) => void;
-  onDragEnd: () => void;
+  /** 並び替えのドラッグ操作（チップと共有） */
+  drag: DragHandlers;
 }
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
@@ -41,10 +40,7 @@ export const PairBoard = memo(function PairBoard({
   dragging,
   dropTarget,
   onAction,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
+  drag,
 }: PairBoardProps) {
   const t = useT();
   const best = bestDirection(pair);
@@ -63,37 +59,17 @@ export const PairBoard = memo(function PairBoard({
       onAction({ type: 'moveBy', pair: pair.pair, delta: e.key === 'ArrowUp' ? -1 : 1 });
     }
   };
-  // dataTransfer はブラウザでは必ずあるが、テスト環境（jsdom）では無いので存在を確かめてから使う
-  const handleDragStart = (e: DragEvent<HTMLElement>) => {
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', pair.pair);
-    }
-    onDragStart(pair.pair);
-  };
-  const handleDragOver = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault(); // preventDefault しないと drop が発火しない
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = 'move';
-    }
-    onDragOver(pair.pair);
-  };
-  const handleDrop = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    onDrop(pair.pair);
-  };
+  const events = dragEvents(drag, pair.pair);
 
   return (
     <section
       className={`card ${best?.profitable ? 'card--profitable' : ''} ${dragging ? 'is-dragging' : ''} ${dropTarget ? 'is-drop-target' : ''}`}
       aria-label={pair.pair}
       draggable={armed}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      {...events}
       onDragEnd={() => {
         setArmed(false);
-        onDragEnd();
+        events.onDragEnd();
       }}
     >
       <header className="card__header">

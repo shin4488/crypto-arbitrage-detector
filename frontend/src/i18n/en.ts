@@ -30,6 +30,7 @@ export const en: Dict = {
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
   dragToReorder: 'Drag to reorder (or use the ↑↓ keys)',
+  dragChipToReorder: 'Drag to reorder (or use the ←→ keys)',
   hidePair: 'Hide this pair',
   showPairs: 'Show pairs',
   showAll: 'Show all',

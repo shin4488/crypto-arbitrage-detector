@@ -286,6 +286,51 @@ describe('Dashboard', () => {
     expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: -1 });
   });
 
+  it('「表示するペア」のチップもドラッグ＆ドロップで並び替えられ、←→ キーでも動かせる', () => {
+    const { onLayoutAction } = renderDashboard(initialized);
+    const filter = screen.getByRole('group', { name: /表示するペア/ });
+    const btc = within(filter).getByRole('button', { name: 'BTC/USDT' });
+    const eth = within(filter).getByRole('button', { name: 'ETH/USDT' });
+    expect(btc.getAttribute('draggable')).toBe('true');
+    // 「すべて表示」は並び替えの対象ではない
+    expect(
+      within(filter).getByRole('button', { name: 'すべて表示' }).getAttribute('draggable'),
+    ).toBe(null);
+    fireEvent.dragStart(btc);
+    expect(btc.className).toContain('is-dragging');
+    fireEvent.dragOver(eth);
+    expect(eth.className).toContain('is-drop-target');
+    fireEvent.drop(eth);
+    expect(onLayoutAction).toHaveBeenCalledWith({
+      type: 'moveTo',
+      pair: 'BTC/USDT',
+      target: 'ETH/USDT',
+    });
+    expect(btc.className).not.toContain('is-dragging');
+    expect(eth.className).not.toContain('is-drop-target');
+    // キーボード（チップは横に並ぶので ←→）
+    fireEvent.keyDown(btc, { key: 'ArrowRight' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: 1 });
+    fireEvent.keyDown(btc, { key: 'ArrowLeft' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: -1 });
+  });
+
+  it('チップとカードは同じ並び順なので、チップをカードに落としても並び替えられる', () => {
+    const { onLayoutAction } = renderDashboard(initialized);
+    const filter = screen.getByRole('group', { name: /表示するペア/ });
+    const btcChip = within(filter).getByRole('button', { name: 'BTC/USDT' });
+    const ethCard = screen.getByRole('region', { name: 'ETH/USDT' });
+    fireEvent.dragStart(btcChip);
+    fireEvent.dragOver(ethCard);
+    expect(ethCard.className).toContain('is-drop-target');
+    fireEvent.drop(ethCard);
+    expect(onLayoutAction).toHaveBeenCalledWith({
+      type: 'moveTo',
+      pair: 'BTC/USDT',
+      target: 'ETH/USDT',
+    });
+  });
+
   it('保存した並び順でカードを並べる', () => {
     renderDashboard(initialized, { layout: { order: ['ETH/USDT', 'BTC/USDT'], hidden: [] } });
     const regions = screen.getAllByRole('region').map((r) => r.getAttribute('aria-label'));

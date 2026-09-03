@@ -160,11 +160,12 @@ h2 {
   cursor: grabbing;
 }
 
-.card.is-dragging {
+/* 並び替えのドラッグ中。カードとチップで共通 */
+.is-dragging {
   opacity: 0.5;
 }
 
-.card.is-drop-target {
+.is-drop-target {
   outline: 2px solid CanvasText;
   outline-offset: 2px;
 }
@@ -338,7 +339,7 @@ tbody th {
   gap: 16px;
 }
 
-/* 表示するペアの切り替え。選んでいるペアだけ枠を濃くして太字にする */
+/* 表示するペアの切り替え。選んでいるペアだけ枠を濃くして太字にする。チップはドラッグで並び替えられる */
 .pair-filter {
   display: flex;
   flex-wrap: wrap;
