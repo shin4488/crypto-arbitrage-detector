@@ -107,6 +107,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 470px), 1fr));
   gap: 20px;
+  align-items: start; /* 折りたたんだカードが隣の高さまで伸びて空箱に見えないようにする */
 }
 
 .card {
