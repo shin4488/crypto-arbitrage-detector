@@ -1,10 +1,18 @@
 /*
- * 配色は OS のライト／ダーク設定に追従させる（システムカラーと light-dark() を使う）。
- * 独自に決める色は「利益＝緑」「損失・切断＝赤」「注意＝黄」「変化の目印」だけ。
+ * 色は意味ごとに決め、同じ意味のものは同じ色にする。色を見れば何の値か分かるようにするため。
+ *   青: 買い（買う取引所の買値、「〜で買い」）と、選んでいるもの（表示中のチップ、落とせる位置）
+ *   橙: 売り（売る取引所の売値、「〜で売り」）
+ *   緑: 利益（差引がプラス、「利益あり」の札、まとめの帯、履歴の利益、接続が正常の丸）
+ *   赤: 赤字・問題（差引がマイナス、接続が切れたときの丸、不正な入力）
+ *   黄: 注意（板で利益が出る量が足りない注記）
+ * 接続の状態の文字や「表示するペア」のラベル、カードの取っ手は地の文字色のまま。色は値と操作にだけ付ける。
+ * 値が変わった目印は色を持たせず地の濃淡にする（更新は秒間何十回もあり、色だとちらつくため）。
+ * ライト／ダークは color-scheme で決まり、システムカラーと light-dark() がそれに追従する。
+ * light-dark() の左がライト、右がダークの値。どちらも地の色に対して読める濃さにする。
  * 数字は等幅で右揃えにして、桁を目で比べやすくする。
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light dark; /* 画面で選ぶ前（描画直後）は OS の設定に従う */
   --pos: light-dark(#137a3a, #5ad07f);
   --pos-bg: light-dark(#e6f6ec, #15301f);
   --neg: light-dark(#b42318, #ff7b70);
@@ -14,7 +22,18 @@
   --sell-bg: light-dark(#fef3c7, #3f2f0a);
   --warn: light-dark(#7a4b00, #ffd27a);
   --line: color-mix(in srgb, CanvasText 15%, transparent);
-  --flash: light-dark(rgb(255 213 0 / 45%), rgb(255 213 0 / 30%));
+  /* 薄い地。ボタンにマウスを乗せたときなどに使う */
+  --tint: color-mix(in srgb, CanvasText 7%, transparent);
+  --flash: color-mix(in srgb, CanvasText 14%, transparent);
+}
+
+/* 画面で選んだ配色。useStoredTheme が html の data-theme に入れる */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
@@ -142,29 +161,43 @@ h2 {
   margin-right: auto;
 }
 
-/* ドラッグ用の取っ手。ここをつかむとカードを動かせる */
+/*
+ * ドラッグ用の取っ手。ここをつかむとカードを動かせる。
+ * 隣のペア名と同じ地の文字色で6つの点を描き、枠と薄い地を付けてボタンだと分かるようにする
+ */
 .drag-handle {
-  padding: 2px 6px;
-  border: 1px solid var(--line);
+  display: inline-grid;
+  place-items: center;
+  width: 2em;
+  height: 2em;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, CanvasText 40%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--buy) 12%, transparent);
-  color: var(--buy);
-  font: inherit;
-  font-size: 0.9rem;
-  letter-spacing: -0.15em;
-  line-height: 1;
+  background: color-mix(in srgb, CanvasText 10%, transparent);
+  color: CanvasText;
   cursor: grab;
+}
+
+.drag-handle svg {
+  display: block;
+}
+
+.drag-handle:hover,
+.drag-handle:focus-visible {
+  border-color: CanvasText;
+  background: color-mix(in srgb, CanvasText 20%, transparent);
 }
 
 .drag-handle:active {
   cursor: grabbing;
 }
 
-.card.is-dragging {
+/* 並び替えのドラッグ中。カードとチップで共通 */
+.is-dragging {
   opacity: 0.5;
 }
 
-.card.is-drop-target {
+.is-drop-target {
   outline: 2px solid var(--buy);
   outline-offset: 2px;
 }
@@ -191,7 +224,7 @@ h2 {
 .icon-button:focus-visible {
   border-color: var(--line);
   color: CanvasText;
-  background: color-mix(in srgb, CanvasText 8%, transparent);
+  background: var(--tint);
 }
 
 .icon-button:disabled {
@@ -212,7 +245,7 @@ h2 {
   overflow-x: auto;
 }
 
-/* 有利な方向で使う価格のセル。買いは青、売りは橙 */
+/* 有利な方向で使う2つの価格（買う取引所の買値、売る取引所の売値）のセル。買いは青、売りは橙で、「買」「売」の札を添える */
 td.pick {
   font-weight: 600;
 }
@@ -267,26 +300,34 @@ tbody th {
   white-space: nowrap;
 }
 
-tr.is-profitable > * {
-  background: var(--pos-bg);
-}
-
-tr.detail td {
-  padding-top: 0;
-  font-size: 0.85rem;
-  color: GrayText;
-}
-
+/* 接続の状態。文字の前に丸を置き、正常なら緑、切れていれば赤にする（文字自体は地の色のまま） */
 .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
 }
 
-/* 今、機会があるかどうかの1行。機会があるときだけ緑で目立たせる */
+.status::before {
+  content: "";
+  flex: none;
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+}
+
+.status--ok::before {
+  background: var(--pos);
+}
+
+.status--down::before {
+  background: var(--neg);
+}
+
+/* 利益が出る取引の一覧。画面の最初に緑の帯で出す */
 .summary {
   padding: 16px 20px;
   border-radius: 12px;
-  background: color-mix(in srgb, CanvasText 6%, transparent);
-  color: GrayText;
 }
 
 .summary--profitable {
@@ -343,7 +384,7 @@ tr.detail td {
   gap: 16px;
 }
 
-/* 表示するペアの切り替え。選んでいるペアだけ買い色の青で塗る（画面の他の青と同じ意味合いの「選択中」） */
+/* 表示するペアの切り替え。選んでいるペアだけ青で塗る（取っ手などと同じ「選んでいるもの」の青）。チップはドラッグで並び替えられる */
 .pair-filter {
   display: flex;
   flex-wrap: wrap;
@@ -359,7 +400,6 @@ tr.detail td {
 .pair-filter legend {
   float: left;
   padding: 0;
-  color: GrayText;
 }
 
 .chip {
@@ -389,7 +429,7 @@ tr.detail td {
   cursor: default;
 }
 
-/* 言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
+/* 配色と言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
 .segmented {
   display: inline-flex;
   margin: 0;
@@ -451,7 +491,7 @@ tr.detail td {
   font-size: 1.3rem;
 }
 
-/* 値が変わった瞬間だけ背景を光らせて、どこが動いたか分かるようにする */
+/* 値が変わった瞬間だけ背景を薄く濃くして、どこが動いたか分かるようにする。更新は秒間何十回もあるので色は付けない */
 @keyframes flash {
   from {
     background: var(--flash);
@@ -491,7 +531,7 @@ tr.detail td {
 
 .info__button:hover,
 .info__button[aria-expanded="true"] {
-  background: color-mix(in srgb, CanvasText 8%, transparent);
+  background: var(--tint);
 }
 
 .info__icon {

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import type { Theme } from '../hooks/useStoredTheme';
 import { type Lang, LangContext } from '../i18n';
 import { emptyLayout, type PairLayout } from '../state/layout';
 import { type FeedState, initialState, reducer } from '../state/reducer';
@@ -16,8 +17,10 @@ function renderDashboard(
   state: FeedState,
   {
     lang = 'ja' as Lang,
+    theme = 'light' as Theme,
     amount = '100',
     onLangChange = vi.fn(),
+    onThemeChange = vi.fn(),
     onAmountChange = vi.fn(),
     layout = emptyLayout as PairLayout,
     onLayoutAction = vi.fn(),
@@ -29,6 +32,8 @@ function renderDashboard(
         state={state}
         lang={lang}
         onLangChange={onLangChange}
+        theme={theme}
+        onThemeChange={onThemeChange}
         amountInput={amount}
         amount={amount}
         onAmountChange={onAmountChange}
@@ -37,7 +42,7 @@ function renderDashboard(
       />
     </LangContext.Provider>,
   );
-  return { onLangChange, onAmountChange, onLayoutAction };
+  return { onLangChange, onThemeChange, onAmountChange, onLayoutAction };
 }
 
 const initialized = reducer(reducer(initialState, { type: 'connection', status: 'connected' }), {
@@ -64,17 +69,21 @@ describe('Dashboard', () => {
     expect(screen.getByText('取引所からのデータを待っています…')).toBeTruthy();
   });
 
-  it('正常時は監視中と接続先を1行で示す', () => {
+  it('正常時は監視中と接続先を1行で示し、印は緑（正常）にする', () => {
     renderDashboard(initialized);
-    expect(screen.getByRole('status')).toHaveTextContent('Binance・OKXに接続中');
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('Binance・OKXに接続中');
+    expect(status.className).toContain('status--ok');
   });
 
-  it('取引所と切断中はその取引所名を示す', () => {
+  it('取引所と切断中はその取引所名を示し、印は赤（問題あり）にする', () => {
     renderDashboard({
       ...initialized,
       exchanges: [exchangeFixture(), exchangeFixture({ id: 'okx', name: 'OKX', connected: false })],
     });
-    expect(screen.getByRole('status')).toHaveTextContent('OKXとの接続が切れました');
+    const status = screen.getByRole('status');
+    expect(status).toHaveTextContent('OKXとの接続が切れました');
+    expect(status.className).toContain('status--down');
   });
 
   it('サーバー切断中はその旨を示し、データは表示し続ける', () => {
@@ -97,22 +106,27 @@ describe('Dashboard', () => {
     expect(summary).toHaveTextContent('+0.2397 USDT');
   });
 
-  it('利益が出ないペアは、取引金額ぶんの「価格差 − 手数料 ＝ 差引」を式で示す', () => {
+  it('利益が出ないペアは、取引金額ぶんの「価格差 − 手数料 ＝ 差引」を式で示す（差引は赤）', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('利益なし')).toBeTruthy();
-    expect(within(btc).getByText('Binanceで買い').closest('strong')).toHaveTextContent(
-      'Binanceで買い → OKXで売り',
-    );
+    // 方向は「買い」を青、「売り」を売り色で示す（表の買値・売値と同じ色）
+    const buy = within(btc).getByText('Binanceで買い');
+    const sell = within(btc).getByText('OKXで売り');
+    expect(buy.className).toContain('buy');
+    expect(sell.className).toContain('sell');
+    expect(buy.closest('strong')).toHaveTextContent('Binanceで買い → OKXで売り');
     // 100 USDT ÷ 買値 65433.8 = 0.00152826 BTC。価格差 +3.04 × 数量 = +0.0046、手数料 0.2、差引 −0.1954
     expect(within(btc).getByText('+0.0046')).toBeTruthy();
     expect(within(btc).getByText('0.2')).toBeTruthy();
-    expect(within(btc).getByText('-0.1954')).toBeTruthy();
+    const net = within(btc).getByText('-0.1954').closest('.figure');
+    expect(net?.className).toContain('neg');
+    expect(net?.className).not.toContain('pos');
     expect(within(btc).getByText('0.00152826 BTC ≈ 100 USDT')).toBeTruthy();
     expect(within(btc).queryByText(/板で利益が出るのは/)).toBeNull();
   });
 
-  it('利益が出るペアは、板で利益が出る量までで計算し、その旨を添える', () => {
+  it('利益が出るペアは、板で利益が出る量までで計算し、その旨を添える（差引は緑）', () => {
     renderDashboard(withOpportunity);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.className).toContain('card--profitable');
@@ -123,7 +137,9 @@ describe('Dashboard', () => {
     // 100 USDT は 1 BTC ぶんだが、板で利益が出るのは 0.3 BTC まで → サーバーの計算値
     expect(within(btc).getByText('+0.3')).toBeTruthy();
     expect(within(btc).getByText('0.0603')).toBeTruthy();
-    expect(within(btc).getByText('+0.2397')).toBeTruthy();
+    const net = within(btc).getByText('+0.2397').closest('.figure');
+    expect(net?.className).toContain('pos');
+    expect(net?.className).not.toContain('neg');
     expect(within(btc).getByText('0.3 BTC ≈ 30 USDT')).toBeTruthy();
     expect(within(btc).getByText(/板で利益が出るのは 0.3 BTC（約 30 USDT）まで/)).toBeTruthy();
     expect(within(btc).getByText(/取得済みの板の範囲での値/)).toBeTruthy();
@@ -145,21 +161,21 @@ describe('Dashboard', () => {
     expect(onAmountChange).toHaveBeenCalledWith('500');
   });
 
-  it('各取引所の買値・売値を「買って売る」の順に並べ、有利な方向で使う価格に色を付ける', () => {
+  it('各取引所の買値・売値を「買って売る」の順に並べ、有利な方向で使う価格に色と「買」「売」の札を付ける', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     const headers = within(btc)
       .getAllByRole('columnheader')
       .map((th) => th.textContent);
     expect(headers).toEqual(['取引所', '買値 (ask)', '売値 (bid)', '更新']);
-    // より有利なのは Binance で買い → OKX で売り: Binance の買値と OKX の売値に色が付く
+    // より有利なのは Binance で買い → OKX で売り: Binance の買値と OKX の売値に色と札が付く
     const buyCell = within(btc).getByText('65,433.8').closest('td');
     const sellCell = within(btc).getByText('65,436.84').closest('td');
     expect(buyCell?.className).toContain('pick--buy');
     expect(within(buyCell as HTMLElement).getByText('買')).toBeTruthy();
     expect(sellCell?.className).toContain('pick--sell');
     expect(within(sellCell as HTMLElement).getByText('売')).toBeTruthy();
-    // 使わない価格には色を付けない
+    // 使わない価格には色も札も付けない
     expect(within(btc).getByText('65,433.79').closest('td')?.className).not.toContain('pick');
     expect(within(btc).getByText('65,436.85').closest('td')?.className).not.toContain('pick');
   });
@@ -169,7 +185,7 @@ describe('Dashboard', () => {
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(btc.querySelector('details')).toBeNull();
     expect(within(btc).queryByText('0.52 BTC')).toBeNull();
-    expect(within(btc).queryByText('OKXで買い')).toBeNull();
+    expect(within(btc).queryByText(/OKXで買い/)).toBeNull();
   });
 
   it('板が無いペアはデータ待ちと表示する', () => {
@@ -239,6 +255,21 @@ describe('Dashboard', () => {
     renderDashboard(initialized, { lang: 'en' });
     expect(screen.getByRole('status')).toHaveTextContent('Connected to Binance・OKX');
     expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
+    expect(screen.getByRole('group', { name: 'Color scheme' })).toBeTruthy();
+  });
+
+  it('配色（ライト／ダーク）を選ぶと通知され、選択中の配色が押された状態になる', () => {
+    const { onThemeChange } = renderDashboard(initialized, { theme: 'dark' });
+    const group = screen.getByRole('group', { name: '配色' });
+    expect(within(group).getByRole('button', { name: 'ダーク', pressed: true })).toBeTruthy();
+    fireEvent.click(within(group).getByRole('button', { name: 'ライト', pressed: false }));
+    expect(onThemeChange).toHaveBeenCalledWith('light');
+  });
+
+  it('配色の切り替えは接続前から使える', () => {
+    renderDashboard(initialState, { theme: 'light' });
+    const group = screen.getByRole('group', { name: '配色' });
+    expect(within(group).getByRole('button', { name: 'ライト', pressed: true })).toBeTruthy();
   });
   it('取っ手のドラッグ＆ドロップで並び替え、キーボードの ↑↓ でも動かせる', () => {
     const { onLayoutAction } = renderDashboard(initialized);
@@ -260,6 +291,51 @@ describe('Dashboard', () => {
     expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: 1 });
     fireEvent.keyDown(handle, { key: 'ArrowUp' });
     expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: -1 });
+  });
+
+  it('「表示するペア」のチップもドラッグ＆ドロップで並び替えられ、←→ キーでも動かせる', () => {
+    const { onLayoutAction } = renderDashboard(initialized);
+    const filter = screen.getByRole('group', { name: /表示するペア/ });
+    const btc = within(filter).getByRole('button', { name: 'BTC/USDT' });
+    const eth = within(filter).getByRole('button', { name: 'ETH/USDT' });
+    expect(btc.getAttribute('draggable')).toBe('true');
+    // 「すべて表示」は並び替えの対象ではない
+    expect(
+      within(filter).getByRole('button', { name: 'すべて表示' }).getAttribute('draggable'),
+    ).toBe(null);
+    fireEvent.dragStart(btc);
+    expect(btc.className).toContain('is-dragging');
+    fireEvent.dragOver(eth);
+    expect(eth.className).toContain('is-drop-target');
+    fireEvent.drop(eth);
+    expect(onLayoutAction).toHaveBeenCalledWith({
+      type: 'moveTo',
+      pair: 'BTC/USDT',
+      target: 'ETH/USDT',
+    });
+    expect(btc.className).not.toContain('is-dragging');
+    expect(eth.className).not.toContain('is-drop-target');
+    // キーボード（チップは横に並ぶので ←→）
+    fireEvent.keyDown(btc, { key: 'ArrowRight' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: 1 });
+    fireEvent.keyDown(btc, { key: 'ArrowLeft' });
+    expect(onLayoutAction).toHaveBeenCalledWith({ type: 'moveBy', pair: 'BTC/USDT', delta: -1 });
+  });
+
+  it('チップとカードは同じ並び順なので、チップをカードに落としても並び替えられる', () => {
+    const { onLayoutAction } = renderDashboard(initialized);
+    const filter = screen.getByRole('group', { name: /表示するペア/ });
+    const btcChip = within(filter).getByRole('button', { name: 'BTC/USDT' });
+    const ethCard = screen.getByRole('region', { name: 'ETH/USDT' });
+    fireEvent.dragStart(btcChip);
+    fireEvent.dragOver(ethCard);
+    expect(ethCard.className).toContain('is-drop-target');
+    fireEvent.drop(ethCard);
+    expect(onLayoutAction).toHaveBeenCalledWith({
+      type: 'moveTo',
+      pair: 'BTC/USDT',
+      target: 'ETH/USDT',
+    });
   });
 
   it('保存した並び順でカードを並べる', () => {

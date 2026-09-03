@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useDragReorder } from '../hooks/useDragReorder';
+import type { Theme } from '../hooks/useStoredTheme';
 import { type Lang, useT } from '../i18n';
 import { type LayoutAction, orderedPairs, type PairLayout, visiblePairs } from '../state/layout';
 import type { FeedState } from '../state/reducer';
@@ -14,6 +15,8 @@ interface DashboardProps {
   state: FeedState;
   lang: Lang;
   onLangChange: (lang: Lang) => void;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
   /** 取引金額の入力欄の文字列（不正な値もそのまま） */
   amountInput: string;
   /** 計算に使う取引金額（正の数に直したもの） */
@@ -31,6 +34,8 @@ export function Dashboard({
   state,
   lang,
   onLangChange,
+  theme,
+  onThemeChange,
   amountInput,
   amount,
   onAmountChange,
@@ -40,25 +45,8 @@ export function Dashboard({
   const t = useT();
   const ordered = orderedPairs(state.pairs, layout);
   const visible = visiblePairs(state.pairs, layout);
-  // ドラッグ＆ドロップの途中経過。落とした時点で layout に反映する
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<string | null>(null);
-  const handleDragStart = useCallback((pair: string) => setDragging(pair), []);
-  const handleDragOver = useCallback((pair: string) => setDropTarget(pair), []);
-  const handleDragEnd = useCallback(() => {
-    setDragging(null);
-    setDropTarget(null);
-  }, []);
-  const handleDrop = useCallback(
-    (target: string) => {
-      if (dragging !== null && dragging !== target) {
-        onLayoutAction({ type: 'moveTo', pair: dragging, target });
-      }
-      setDragging(null);
-      setDropTarget(null);
-    },
-    [dragging, onLayoutAction],
-  );
+  // カードとチップのドラッグ＆ドロップ。落とした時点で layout に反映する
+  const drag = useDragReorder((pair, target) => onLayoutAction({ type: 'moveTo', pair, target }));
   // 取引金額の単位。通貨ペアはすべて同じ Quote 通貨（USDT）を前提に、先頭のペアから取る
   const quote = state.pairs[0]?.quote ?? 'USDT';
 
@@ -69,13 +57,15 @@ export function Dashboard({
         exchanges={state.exchanges}
         lang={lang}
         onLangChange={onLangChange}
+        theme={theme}
+        onThemeChange={onThemeChange}
       />
       {state.initialized ? (
         <>
           <Summary pairs={state.pairs} exchanges={state.exchanges} amount={amount} />
           <div className="toolbar">
             <AmountBar amountInput={amountInput} quote={quote} onAmountChange={onAmountChange} />
-            <PairFilter pairs={ordered} layout={layout} onAction={onLayoutAction} />
+            <PairFilter pairs={ordered} layout={layout} onAction={onLayoutAction} drag={drag} />
           </div>
           <main className="boards">
             {visible.length === 0 && <p className="muted">{t.noVisiblePairs}</p>}
@@ -85,13 +75,10 @@ export function Dashboard({
                 pair={pair}
                 exchanges={state.exchanges}
                 amount={amount}
-                dragging={dragging === pair.pair}
-                dropTarget={dropTarget === pair.pair && dragging !== pair.pair}
+                dragging={drag.dragging === pair.pair}
+                dropTarget={drag.dropTarget === pair.pair && drag.dragging !== pair.pair}
                 onAction={onLayoutAction}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onDragEnd={handleDragEnd}
+                drag={drag.handlers}
               />
             ))}
           </main>

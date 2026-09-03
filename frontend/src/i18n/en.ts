@@ -4,6 +4,9 @@ export const en: Dict = {
   appTitle: 'Crypto Arbitrage Detector',
   appDescription: 'Finds cross-exchange trades that are still profitable after fees',
   language: 'Language',
+  theme: 'Color scheme',
+  themeLight: 'Light',
+  themeDark: 'Dark',
 
   statusConnecting: 'Connecting to the server…',
   statusServerDisconnected: 'Lost connection to the server. Reconnecting…',
@@ -27,6 +30,7 @@ export const en: Dict = {
   depthExhausted: 'Based on the received order book depth (could be more in reality)',
 
   dragToReorder: 'Drag to reorder (or use the ↑↓ keys)',
+  dragChipToReorder: 'Drag to reorder (or use the ←→ keys)',
   hidePair: 'Hide this pair',
   showPairs: 'Show pairs',
   showAll: 'Show all',

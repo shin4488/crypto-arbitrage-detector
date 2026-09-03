@@ -9,6 +9,15 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Crypto Arbitrage Detector</title>
+    <!-- 保存した配色を描画前に反映し、OS の設定と違うときに一瞬別の配色が出るのを防ぐ（useStoredTheme と同じキー） -->
+    <script>
+      try {
+        const theme = localStorage.getItem('arb.theme');
+        if (theme === 'light' || theme === 'dark') {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

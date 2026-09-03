@@ -1,5 +1,6 @@
-import { type DragEvent, type KeyboardEvent, memo, type ReactNode, useState } from 'react';
+import { type KeyboardEvent, memo, type ReactNode, useState } from 'react';
 import { formatDecimal, multiplyDecimals, quantityFractionDigits } from '../format/number';
+import { type DragHandlers, dragEvents } from '../hooks/useDragReorder';
 import { useT } from '../i18n';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
 import type { LayoutAction } from '../state/layout';
@@ -18,10 +19,8 @@ interface PairBoardProps {
   /** ドラッグ中のカードをここに落とせる位置として示す */
   dropTarget: boolean;
   onAction: (action: LayoutAction) => void;
-  onDragStart: (pair: string) => void;
-  onDragOver: (pair: string) => void;
-  onDrop: (pair: string) => void;
-  onDragEnd: () => void;
+  /** 並び替えのドラッグ操作（チップと共有） */
+  drag: DragHandlers;
 }
 
 /** 価格の表示桁数。取引所の刻みに合わせて最大8桁、末尾の 0 は落とす */
@@ -41,10 +40,7 @@ export const PairBoard = memo(function PairBoard({
   dragging,
   dropTarget,
   onAction,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
+  drag,
 }: PairBoardProps) {
   const t = useT();
   const best = bestDirection(pair);
@@ -63,37 +59,17 @@ export const PairBoard = memo(function PairBoard({
       onAction({ type: 'moveBy', pair: pair.pair, delta: e.key === 'ArrowUp' ? -1 : 1 });
     }
   };
-  // dataTransfer はブラウザでは必ずあるが、テスト環境（jsdom）では無いので存在を確かめてから使う
-  const handleDragStart = (e: DragEvent<HTMLElement>) => {
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', pair.pair);
-    }
-    onDragStart(pair.pair);
-  };
-  const handleDragOver = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault(); // preventDefault しないと drop が発火しない
-    if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = 'move';
-    }
-    onDragOver(pair.pair);
-  };
-  const handleDrop = (e: DragEvent<HTMLElement>) => {
-    e.preventDefault();
-    onDrop(pair.pair);
-  };
+  const events = dragEvents(drag, pair.pair);
 
   return (
     <section
       className={`card ${best?.profitable ? 'card--profitable' : ''} ${dragging ? 'is-dragging' : ''} ${dropTarget ? 'is-drop-target' : ''}`}
       aria-label={pair.pair}
       draggable={armed}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      {...events}
       onDragEnd={() => {
         setArmed(false);
-        onDragEnd();
+        events.onDragEnd();
       }}
     >
       <header className="card__header">
@@ -106,7 +82,7 @@ export const PairBoard = memo(function PairBoard({
           onMouseUp={() => setArmed(false)}
           onKeyDown={handleKey}
         >
-          ⋮⋮
+          <GripIcon />
         </button>
         <h2>{pair.pair}</h2>
         <span className={badge.className}>{badge.text}</span>
@@ -135,7 +111,24 @@ export const PairBoard = memo(function PairBoard({
   );
 });
 
-/** 「隠す」の目のアイコン。アイコン集を依存に足すほどではないので、この1つだけ手で描いている */
+/**
+ * 取っ手の6つの点。文字の「⋮⋮」はフォント次第で細く小さくなり見つけにくかったので、点を描いて大きさをそろえる。
+ * アイコン集を依存に足すほどではないので手で描いている（目のアイコンも同じ）
+ */
+function GripIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="currentColor">
+      <circle cx="9" cy="5" r="2.2" />
+      <circle cx="15" cy="5" r="2.2" />
+      <circle cx="9" cy="12" r="2.2" />
+      <circle cx="15" cy="12" r="2.2" />
+      <circle cx="9" cy="19" r="2.2" />
+      <circle cx="15" cy="19" r="2.2" />
+    </svg>
+  );
+}
+
+/** 「隠す」の目のアイコン */
 function EyeOffIcon() {
   return (
     <svg
@@ -164,7 +157,7 @@ interface VerdictProps {
   amount: string;
 }
 
-/** 主役の方向と、取引金額ぶんの「価格差 − 手数料 ＝ 差引」。差引がそのまま損益になる */
+/** 主役の方向と、取引金額ぶんの「価格差 − 手数料 ＝ 差引」。差引がそのまま損益になる（プラスは緑、マイナスは赤） */
 function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
   const t = useT();
   const plan = planForAmount(d, amount);

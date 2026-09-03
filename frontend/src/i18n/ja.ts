@@ -3,6 +3,9 @@ export const ja = {
   appTitle: 'Crypto Arbitrage Detector',
   appDescription: '取引所間の価格差から、手数料を引いても利益が出る取引を見つけます',
   language: '言語',
+  theme: '配色',
+  themeLight: 'ライト',
+  themeDark: 'ダーク',
 
   // 接続状態（画面上部の1行）
   statusConnecting: 'サーバーに接続中…',
@@ -29,6 +32,7 @@ export const ja = {
 
   // カードの操作
   dragToReorder: 'ドラッグして並び替え（↑↓キーでも動かせます）',
+  dragChipToReorder: 'ドラッグして並び替え（←→キーでも動かせます）',
   hidePair: 'このペアを隠す',
   showPairs: '表示するペア',
   showAll: 'すべて表示',
