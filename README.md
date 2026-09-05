@@ -149,7 +149,7 @@ make lint   # 静的検査（golangci-lint、型検査、Biome）
 
 - 細かいタスクは `backend/Makefile`（`make help` で一覧）と `frontend/package.json` の scripts にあります
 - ローカルのツールを使うなら `make test GO=go`、`make frontend-lint FRONTEND_SH="cd frontend && sh -c"` のように切り替えられます
-- Claude Code で作業するときは、`.claude/hooks/format-lint.sh` がファイルの編集直後と応答の終わりに、変更のあった側の整形と lint を Docker で実行します。lint の指摘が残っていれば Claude に差し戻されます
+- Claude Code / Codex で作業するときは、`.claude/hooks/format-lint.sh` がファイルの編集直後と応答の終わりに、変更のあった側の整形と lint を Docker で実行します。lint の指摘が残っていればエージェントに差し戻されます。Codex の初回設定は [CLAUDE.md](CLAUDE.md) を参照してください
 
 ## 検知のしくみ
 

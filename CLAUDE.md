@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Claude Code がこのリポジトリで作業するときの手引き。
+- Claude Code / Codex がこのリポジトリで作業するときの手引き。
 
 ## 何をするものか
 
@@ -59,7 +59,17 @@ make fmt / make test / make lint / make up / make dev
 
 ## 変更したら確かめること
 
-- 整形と lint は Claude Code の hook（`.claude/settings.json` → `.claude/hooks/format-lint.sh`）が、Edit / Write の直後と応答を終えるときに Docker で自動実行する。Bash で編集したファイルは応答終了時に git の変更一覧から拾う。lint の指摘が返ってきたら直してから終える
+- 整形と lint は Claude Code / Codex の hook が、Edit / Write（Codex では apply_patch）の直後と応答を終えるときに Docker で自動実行する。Bash で編集したファイルは応答終了時に git の変更一覧から拾う。lint の指摘が返ってきたら直してから終える
 - バックエンド: `make fmt vet test lint`（CI では race テストと govulncheck も走る）
 - フロントエンド: `yarn check && yarn build`
 - 配信形式を変えたら、`wire` のテストとフロントの `protocol/types.ts`・`test/fixtures.ts` をそろえる
+
+## Claude Code と Codex の共通設定
+
+- 共通設定は Claude 側を編集し、相対シンボリックリンクで Codex と共有する。
+  - `AGENTS.md` → `CLAUDE.md`
+  - `.agents/skills` → `.claude/skills`
+  - `.codex/hooks` → `.claude/hooks`
+- Codex の hook は `.codex/hooks.json` に登録する。リポジトリを信頼し、CLI の `/hooks` で承認する。登録コマンド変更時も再承認する（[手順](https://learn.chatgpt.com/docs/hooks)）。
+- Claude の権限設定（`permissions`）は Codex には引き継がれない。
+- hook の実行にはホストの Bash・jq・realpath が必要。整形・lint は Makefile 経由で Docker 内で実行する。
