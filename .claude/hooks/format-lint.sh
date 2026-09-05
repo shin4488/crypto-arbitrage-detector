@@ -3,20 +3,31 @@
 # 変更のあった側（backend / frontend）の整形と lint を make 経由で Docker の中で実行する。
 # 整形はそのまま適用し、lint の指摘が残ったら終了コード 2 で出力を Claude に返して修正させる。
 #
-# 標準入力の JSON は jq に頼らず grep で見る。編集したファイル（file_path）があればその側だけ、
+# 標準入力の JSON は jq で読む。編集したファイル（file_path）があればその側だけ、
 # なければ（Stop のとき）git の変更一覧から判断する。
 
-cd "$CLAUDE_PROJECT_DIR" || exit 1
+project_dir="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel)}"
+cd "$project_dir" || exit 1
 input=$(cat)
 
 # この hook が止めた応答の続きでは再度止めない（無限ループの防止）
-printf '%s' "$input" | grep -q '"stop_hook_active" *: *true' && exit 0
+[ "$(printf '%s' "$input" | jq -r '.stop_hook_active // false')" = true ] && exit 0
 
-file=$(printf '%s' "$input" | grep -o '"file_path" *: *"[^"]*"' | head -n 1 | cut -d '"' -f 4)
+file=$(printf '%s' "$input" | jq -r '.tool_input.file_path // empty') || exit 2
 if [ -n "$file" ]; then
   changed=${file#"$PWD"/}
 else
-  changed=$(git status --porcelain --untracked-files=all | cut -c 4-)
+  # -z なら空白・引用符を含むパスも Git が引用しない。改名元は読み飛ばす。
+  changed=$(git status --porcelain -z --untracked-files=all | python3 -c '
+import sys
+entries = iter(sys.stdin.buffer.read().split(b"\0"))
+for entry in entries:
+    if not entry:
+        continue
+    print(entry[3:].decode())
+    if b"R" in entry[:2] or b"C" in entry[:2]:
+        next(entries, None)
+')
 fi
 
 # Docker が動いていなければ何もしない（環境の都合で作業を止めない）

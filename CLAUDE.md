@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Claude Code がこのリポジトリで作業するときの手引き。
+Claude Code / Codex がこのリポジトリで作業するときの手引き。
 
 ## 何をするものか
 
@@ -59,7 +59,13 @@ make fmt / make test / make lint / make up / make dev
 
 ## 変更したら確かめること
 
-- 整形と lint は Claude Code の hook（`.claude/settings.json` → `.claude/hooks/format-lint.sh`）が、Edit / Write の直後と応答を終えるときに Docker で自動実行する。Bash で編集したファイルは応答終了時に git の変更一覧から拾う。lint の指摘が返ってきたら直してから終える
+- 整形と lint は Claude Code / Codex の hook が、Edit / Write（Codex では apply_patch）の直後と応答を終えるときに Docker で自動実行する。Bash で編集したファイルは応答終了時に git の変更一覧から拾う。lint の指摘が返ってきたら直してから終える
 - バックエンド: `make fmt vet test lint`（CI では race テストと govulncheck も走る）
 - フロントエンド: `yarn check && yarn build`
 - 配信形式を変えたら、`wire` のテストとフロントの `protocol/types.ts`・`test/fixtures.ts` をそろえる
+
+## Claude Code と Codex の共通設定
+
+`AGENTS.md` は `CLAUDE.md`、`.agents/skills` は `.claude/skills`、`.codex/hooks` は `.claude/hooks` への相対シンボリックリンク。共通の指示・skill・hook は Claude 側の実体を編集する。
+
+Codex のフック登録は `.codex/hooks.json`、有効化は `.codex/config.toml` で管理する。初回の信頼設定、依存ツール、動作確認は [.claude/hooks/README.md](.claude/hooks/README.md) を参照。Claude の `permissions` 設定は Codex には引き継がれない。
