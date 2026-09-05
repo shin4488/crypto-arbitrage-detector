@@ -1,23 +1,11 @@
 {
   "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/format-lint.sh\"",
-            "timeout": 300
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/format-lint.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/stop.sh\"",
             "timeout": 300
           }
         ]

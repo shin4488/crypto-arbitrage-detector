@@ -66,10 +66,10 @@ make fmt / make test / make lint / make up / make dev
 
 ## Claude Code と Codex の共通設定
 
-- 共通設定は Claude 側を編集し、相対シンボリックリンクで Codex と共有する。
-  - `AGENTS.md` → `CLAUDE.md`
-  - `.agents/skills` → `.claude/skills`
-  - `.codex/hooks` → `.claude/hooks`
-- Codex の hook は `.codex/hooks.json` に登録する。リポジトリを信頼し、CLI の `/hooks` で承認する。登録コマンド変更時も再承認する（[手順](https://learn.chatgpt.com/docs/hooks)）。
+- `make setup` で、導入済みのClaude・Codexに [agent-plugins](https://github.com/shin4488/agent-plugins) をユーザー単位でインストールする。
+- `AGENTS.md` → `CLAUDE.md`、`.agents/skills` → `.claude/skills`、`.codex/hooks` → `.claude/hooks` は相対シンボリックリンク。ローカルの実体はClaude側を編集する。
+- 編集後は共通プラグインから `.claude/hooks/post-edit.sh` を呼ぶ。`Stop` は `.claude/hooks/stop.sh` で変更のある側を調べ、同じ処理を使う。
+- ローカルの `Stop` だけを `.claude/settings.json` と `.codex/hooks.json` に登録する。共通の編集後hookは重複登録しない。
+- 導入後はツールを読み込み直し、リポジトリを信頼してCodexの `/hooks` で承認する。登録コマンド変更時も再確認する（[手順](https://learn.chatgpt.com/docs/hooks)）。
 - Claude の権限設定（`permissions`）は Codex には引き継がれない。
 - hook の実行にはホストの Bash・jq・realpath が必要。整形・lint は Makefile 経由で Docker 内で実行する。
