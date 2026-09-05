@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-hook.py\" format-lint.sh",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/format-lint.sh\"",
             "timeout": 300
           }
         ]
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-hook.py\" format-lint.sh",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/format-lint.sh\"",
             "timeout": 300
           }
         ]
