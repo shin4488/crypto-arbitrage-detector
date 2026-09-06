@@ -26,7 +26,20 @@ Binance と OKX の板を突き合わせ、手数料を引いても利益が残�
 
 Go も Node.js もローカルに入れない前提で、`backend/Makefile` とルートの `Makefile` が Docker コンテナの中でコマンドを動かす（`make test GO=go` でローカルの Go に、`make frontend-lint FRONTEND_SH="cd frontend && sh -c"` でローカルの Node.js に切り替えられる）。
 
-開発はルートで `make dev`、全体の整形・テスト・静的検査は `make fmt test lint`。バックエンドの必須確認は `backend/` で `make fmt vet test lint`、フロントはコンテナ内の `frontend/` で `yarn check && yarn build`。全タスクとオプションは `make help`・各Makefile・`frontend/package.json` を参照する。
+| 場面 | 実行する場所 | コマンド |
+| --- | --- | --- |
+| 開発環境の起動 | リポジトリのルート | `make dev` |
+| 全体の整形・テスト・静的検査 | リポジトリのルート | `make fmt test lint` |
+| バックエンド変更後の必須確認 | `backend/` | `make fmt vet test lint` |
+| フロントエンド変更後の必須確認 | `frontend-dev` コンテナの `/app`（ホストの `frontend/`） | `corepack yarn check && corepack yarn build` |
+
+フロントの確認をホストから実行するときは、ルートで次を使う。Makefileと同じ一時コンテナ・依存準備を使い、ホストにNode.jsを要求しない。
+
+```bash
+docker compose run --rm --no-deps -T frontend-dev sh -c 'corepack yarn install --immutable && corepack yarn check && corepack yarn build'
+```
+
+初回セットアップの詳細・追加オプションは [README](README.md)・`make help`・各Makefile・`frontend/package.json` を参照する。上記の必須コマンドと実行条件は、一覧を省く場合もこのガイドに残す。
 
 ## 構成のポイント
 
