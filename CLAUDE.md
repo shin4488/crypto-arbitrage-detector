@@ -17,7 +17,7 @@ Binance と OKX の板を突き合わせ、手数料を引いても利益が残�
 - **テストから書く。** 仕様を説明する名前のテスト（日本語でよい）を先に書き、仕様を変えるときはまずテストを変える
 - **コメントとドキュメントは日本語、識別子は英語。** コメントには「なぜそうしているか」「前提にしているドメインの知識」など、コードを読んでも分からないことを書く
 - **固定の閾値を入れない。** 数量の上限・下限、最小スプレッド、データの有効期限（秒）は仕様として排除している。板の突き合わせと接続状態で判断する
-- **依存を増やさない。** Go はサードパーティ2つ、フロントの実行時依存は react だけ。増やすなら理由をはっきりさせ、推移的依存の少ないものを選ぶ
+- **依存を増やさない。** 現在の依存は `backend/go.mod`・`frontend/package.json` を確認する。増やすなら理由をはっきりさせ、推移的依存の少ないものを選ぶ
 - **機密情報は絶対に commit しない。** 今は API キーなどを使っていない。必要になっても環境変数で渡す
 - **コミットは意味ごとに分ける。** 後で revert しやすい単位にする
 - **UI は見た目のかっこよさより、見やすさと使いやすさ。** CSS は必要最低限にする
@@ -26,50 +26,34 @@ Binance と OKX の板を突き合わせ、手数料を引いても利益が残�
 
 Go も Node.js もローカルに入れない前提で、`backend/Makefile` とルートの `Makefile` が Docker コンテナの中でコマンドを動かす（`make test GO=go` でローカルの Go に、`make frontend-lint FRONTEND_SH="cd frontend && sh -c"` でローカルの Node.js に切り替えられる）。
 
-```bash
-# バックエンド
-cd backend
-make test          # テスト
-make vet lint      # 静的検査（golangci-lint は Docker イメージで動く）
-make fmt           # 整形（gofmt + goimports。golangci-lint fmt を Docker で動かす）
-make run           # 開発用に起動（docker compose の backend-dev、8080）
-
-# フロントエンド（Yarn Berry を corepack 経由で使う）
-cd frontend
-corepack enable
-yarn install       # lockfile と一致しないときに失敗させるなら --immutable
-yarn dev           # 開発サーバー（3000。/ws は 8080 へ中継）
-yarn check         # 型検査 + lint + テスト
-yarn build         # dist/ を生成
-
-# 全体（フロントエンドのタスクも docker compose の frontend-dev の中で動く）
-make fmt / make test / make lint / make up / make dev
-```
+開発はルートで `make dev`、全体の整形・テスト・静的検査は `make fmt test lint`。バックエンドの必須確認は `backend/` で `make fmt vet test lint`、フロントはコンテナ内の `frontend/` で `yarn check && yarn build`。全タスクとオプションは `make help`・各Makefile・`frontend/package.json` を参照する。
 
 ## 構成のポイント
 
-- `internal/arbitrage`: 板を突き合わせる純粋関数。検知の中核で、テストが仕様書を兼ねる
-- `internal/engine`: 板の保持と両方向の評価、機会（Episode）の開始・更新・終了、接続状態。イベントに通し番号 `Seq` を振る
-- `internal/server`: クライアントごとの送信箱（同じ対象は最新だけ残す）で、遅いクライアントをほかから切り離す
-- `internal/exchange/wsclient`: 再接続・keep-alive・受信タイムアウトの共通処理。取引所ごとの違いは `binance/`、`okx/` に閉じ込める
-- `internal/wire`: 配信 JSON の形式。フロントの `src/protocol/types.ts` と対応させる
+- `backend/internal/arbitrage`: 板を突き合わせる純粋関数。検知の中核で、テストが仕様書を兼ねる
+- `backend/internal/engine`: 板の保持と両方向の評価、機会（Episode）の開始・更新・終了、接続状態。イベントに通し番号 `Seq` を振る
+- `backend/internal/server`: クライアントごとの送信箱（同じ対象は最新だけ残す）で、遅いクライアントをほかから切り離す
+- `backend/internal/exchange/wsclient`: 再接続・keep-alive・受信タイムアウトの共通処理。取引所ごとの違いは `binance/`、`okx/` に閉じ込める
+- `backend/internal/wire`: 配信 JSON の形式。フロントの `frontend/src/protocol/types.ts` と対応させる
 - `backend/config.json`: 設定の唯一の置き場。モジュール直下の `embed.go` でバイナリに埋め込み、`internal/config` が読む。本番相当（docker compose）でも開発（make dev）でも、編集して起動し直すだけで反映される
-- 取引所を増やす: `internal/exchange/<name>/` に `exchange.Feed` を実装して `registry` に登録する
-- 通貨ペアを増やす: `backend/config.json` の `pairs` に足して起動し直すだけ。コードにペアの一覧を書かない（`config.Default()` はこのファイルを埋め込んだもの）。手順は `.claude/skills/add-pair/SKILL.md`
+- 取引所を増やす: `backend/internal/exchange/<name>/` に `exchange.Feed` を実装して `registry` に登録する
+- 通貨ペアを増やすときは `.claude/skills/add-pair/SKILL.md` に従う。設定の一覧や手順をここに複製しない。
 
 ## 変更したら確かめること
 
 - 整形と lint は Claude Code / Codex の hook が、Edit / Write（Codex では apply_patch）の直後と応答を終えるときに Docker で自動実行する。Bash で編集したファイルは応答終了時に git の変更一覧から拾う。lint の指摘が返ってきたら直してから終える
-- バックエンド: `make fmt vet test lint`（CI では race テストと govulncheck も走る）
-- フロントエンド: `yarn check && yarn build`
+- 上記の検証を通す。CIではバックエンドのraceテストとgovulncheckも走る。
 - 配信形式を変えたら、`wire` のテストとフロントの `protocol/types.ts`・`test/fixtures.ts` をそろえる
 
-## Claude Code と Codex の共通設定
+## 共通エージェント設定
 
-- `make setup` で、導入済みのClaude・Codexに [agent-plugins](https://github.com/shin4488/agent-plugins) をユーザー単位でインストールする。
-- `AGENTS.md` → `CLAUDE.md`、`.agents/skills` → `.claude/skills`、`.codex/hooks` → `.claude/hooks` は相対シンボリックリンク。ローカルの実体はClaude側を編集する。
-- 編集後は共通プラグインから `.claude/hooks/post-edit.sh` を呼ぶ。`Stop` は `.claude/hooks/stop.sh` で変更のある側を調べ、同じ処理を使う。
-- ローカルの `Stop` だけを `.claude/settings.json` と `.codex/hooks.json` に登録する。共通の編集後hookは重複登録しない。
-- 導入後はツールを読み込み直し、リポジトリを信頼してCodexの `/hooks` で承認する。登録コマンド変更時も再確認する（[手順](https://learn.chatgpt.com/docs/hooks)）。
-- Claude の権限設定（`permissions`）は Codex には引き継がれない。
-- hook の実行にはホストの Bash・jq・realpath が必要。整形・lint は Makefile 経由で Docker 内で実行する。
+- `make setup` と [READMEの導入手順](README.md#エージェントの導入とhook)を使う。ローカルの実体はClaude側で編集し、`.agents/skills`・`.codex/hooks` の相対リンクを維持する。
+- 共通pluginが `.claude/hooks/post-edit.sh` を呼ぶ。ローカル登録は両ツールの `Stop` のみとし、編集後hookを重複登録しない。整形・lintはDocker/Makefile経由。Claudeの権限設定はCodexに引き継がれない。
+
+## 調査と指示の保守
+
+- `AGENTS.md` は `CLAUDE.md` への相対リンク。本文は一度読み、実体を編集する。
+- `rg` は対象ディレクトリから名前・見出し・シンボルを探す。通常は `-g` で依存・成果物・ログ・ロックファイル・生成コードを除外し、依存・生成・型・障害の調査では直接読む。見つからなければ範囲・除外を見直す。
+- 必須検証を行い、要点・失敗箇所を報告する。同じ差分・依存・設定・実行条件の結果は再利用する。
+- ここは恒久規約・必須条件・主要コマンド・参照先に限る。進捗はチャット・既存Issue/PR、機能・構成・依存・設定等の現在値は元の定義へ。規約・条件・参照先の変更や継続して必要な判断基準の追加時に更新する。
+- スキルは説明から選び、該当 `SKILL.md` に従う。一覧・手順は転記せず、このガイドの必須適用条件は守る。
