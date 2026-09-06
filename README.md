@@ -287,3 +287,13 @@ URL: `/`（画面）、`/ws`（配信）、`/healthz`（生存確認と取引所
 - Yarn（Berry）は依存のインストール時スクリプトを禁止し（`enableScripts: false`）、公開から 7 日経っていないバージョンは取り込まない（`npmMinimalAgeGate`）。バージョンは完全に固定する
 - Docker のベースイメージはハッシュ（digest）で固定し、実行イメージは最小構成（シェルなし、非 root）。GitHub Actions はコミット SHA で固定する
 - Dependabot は 7 日のクールダウンを置いてから更新を提案する
+
+## エージェントの導入とhook
+
+- `make setup` で、導入済みのClaude・Codexに [agent-plugins](https://github.com/shin4488/agent-plugins) をユーザー単位でインストールする。
+- `AGENTS.md` → `CLAUDE.md`、`.agents/skills` → `.claude/skills`、`.codex/hooks` → `.claude/hooks` は相対シンボリックリンク。ローカルの実体はClaude側を編集する。
+- 編集後は共通プラグインから `.claude/hooks/post-edit.sh` を呼ぶ。`Stop` は `.claude/hooks/stop.sh` で変更のある側を調べ、同じ処理を使う。
+- ローカルの `Stop` だけを `.claude/settings.json` と `.codex/hooks.json` に登録する。共通の編集後hookは重複登録しない。
+- 導入後はツールを読み込み直し、リポジトリを信頼してCodexの `/hooks` で承認する。登録コマンド変更時も再確認する（[手順](https://learn.chatgpt.com/docs/hooks)）。
+- Claude の権限設定（`permissions`）は Codex には引き継がれない。
+- hook の実行にはホストの Bash・jq・realpath が必要。整形・lint は Makefile 経由で Docker 内で実行する。
