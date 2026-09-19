@@ -12,6 +12,10 @@ cd "$project_dir"
 
 # 削除・改名・未追跡ファイルも含めて、変更のある側を一度ずつ検査する。
 targets=()
-[ -z "$(git status --porcelain --untracked-files=all -- backend)" ] || targets+=("$PWD/backend/")
-[ -z "$(git status --porcelain --untracked-files=all -- frontend)" ] || targets+=("$PWD/frontend/")
+# 編集後hookと同じく、Markdownだけの変更ではDockerを起動しない。
+for side in backend frontend; do
+  [ -z "$(git status --porcelain --untracked-files=all -- "$side" \
+    ":(glob,exclude)$side/**/*.md" ":(glob,exclude)$side/**/*.markdown" \
+    ":(glob,exclude)$side/**/*.mdx")" ] || targets+=("$PWD/$side/")
+done
 exec bash .claude/hooks/post-edit.sh "${targets[@]}"
