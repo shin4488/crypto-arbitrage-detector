@@ -4,6 +4,8 @@ check_backend=false
 check_frontend=false
 for file; do
   case "$file" in
+    # MarkdownはGo・フロントエンドの整形/lint対象ではない。
+    *.md | *.markdown | *.mdx) continue ;;
     "$PWD"/backend/*) check_backend=true ;;
     "$PWD"/frontend/*) check_frontend=true ;;
   esac
