@@ -66,8 +66,8 @@ func Evaluate(buy, sell domain.OrderBook, fees Fees) (Result, bool) {
 		return Result{}, false
 	}
 
-	buyMultiplier := decimal.NewFromInt(1).Add(fees.Buy)   // 1 + 買い手数料率
-	sellMultiplier := decimal.NewFromInt(1).Sub(fees.Sell) // 1 − 売り手数料率
+	buyMultiplier := decimal.NewFromInt(1).Add(fees.Buy)
+	sellMultiplier := decimal.NewFromInt(1).Sub(fees.Sell)
 
 	// 1単位あたりの手数料込み損益。板の各段の採否もこの式で判断する。
 	netPerUnit := func(ask, bid decimal.Decimal) decimal.Decimal {
@@ -109,7 +109,7 @@ func walk(r *Result, asks, bids []domain.Level, netPerUnit func(ask, bid decimal
 	for i < len(asks) && j < len(bids) {
 		ask, bid := asks[i], bids[j]
 		if !netPerUnit(ask.Price, bid.Price).IsPositive() {
-			// この段以降は逆ざや（板は単調なので、それより深い段も全て赤字）。
+			// askは昇順、bidは降順なので、利益がゼロ以下になった先を調べても黒字には戻らない。
 			return
 		}
 		q := decimal.Min(askRemaining, bidRemaining)
