@@ -5,7 +5,7 @@ description: 監視する通貨ペアの追加・削除時に、設定を変更�
 
 # 通貨ペアを追加する（減らす）
 
-編集するのは `backend/config.json` の `pairs` だけ。Go・TypeScript・テスト・README・CLAUDE.md は変更しない。
+編集するのは `backend/config.json` の `pairs` だけ。Go・TypeScript・テスト・README・AGENTS.md は変更しない。
 ペアの一覧はコードにもドキュメントにも書かない方針で、取引所ごとのシンボル（`ADAUSDT`、`ADA-USDT`）も画面のカードも設定から自動で組み立てられる。
 
 ## 手順
