@@ -105,6 +105,35 @@ make lint   # 静的解析（golangci-lint, 型検査, Biome）
 
 ---
 
+## アクセス解析
+
+本番サイトは専用の Google Analytics 4 プロパティで計測します。設定の入口は
+[Google Analytics](https://analytics.google.com/analytics/web/#/a154552231p557168511/reports/intelligenthome)
+です。タイムゾーンは日本時間、レポート通貨は日本円です。
+
+`frontend/src/analytics.ts` が本番ビルドかつ本番オリジンの場合だけタグを読み込みます。
+ローカル開発・プレビューは集計しません。本番ドメインや測定ストリームを変更するときは、
+このファイルの公開識別子・オリジンと Google Analytics 側のストリームをそろえてください。
+
+ページビュー・流入元・新規／再訪・利用時間・端末・地域に加えて、次の操作を計測します。
+
+| イベント | 計測する操作 | 追加パラメータ |
+| --- | --- | --- |
+| `dashboard_ready` | 配信データを受信して画面が利用可能になった | なし |
+| `language_changed` | 表示言語の変更 | `ui_language` |
+| `theme_changed` | 配色の変更 | `ui_theme` |
+| `pair_visibility_changed` | 通貨ペアの表示／非表示 | `pair_symbol`、`visible` |
+| `pairs_reset` | すべての通貨ペアを再表示 | なし |
+| `pair_reordered` | 通貨ペアの並べ替え | `pair_symbol`、`interaction_method` |
+| `amount_changed` | 金額欄の編集後にフォーカスを移動 | なし |
+| `fee_info_opened` | 手数料の説明をボタンで表示 | なし |
+
+表示言語と配色はユーザー属性 `ui_language`・`ui_theme` にも反映します。
+取引金額・利益・板データ・個人を識別するユーザーIDは送信しません。URLと参照元からクエリと断片を除き、
+変化する利益通知タイトルの代わりに固定ページ名を使います。広告向けの Google シグナルと広告のパーソナライズは無効です。
+拡張計測はページビュー・スクロール・離脱クリックを使い、フォーム・検索・動画・ダウンロードは無効にしています。
+解析タグがブロックされた場合も監視画面は動作します。
+
 ## ディレクトリ構成
 
 ```text

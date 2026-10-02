@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { trackEvent, updateUserPreferences } from './analytics';
 import { Dashboard } from './components/Dashboard';
 import { useArbitrageFeed } from './hooks/useArbitrageFeed';
 import { usePairLayout } from './hooks/usePairLayout';
@@ -6,6 +7,7 @@ import { useStoredLang } from './hooks/useStoredLang';
 import { useStoredTheme } from './hooks/useStoredTheme';
 import { useTitleNotification } from './hooks/useTitleNotification';
 import { getDict, LangContext } from './i18n';
+import { applyLayoutAction, isHidden, type LayoutAction } from './state/layout';
 import { titleSummary } from './state/selectors';
 import { DEFAULT_AMOUNT, normalizeAmount } from './state/trade';
 
@@ -28,6 +30,43 @@ export function App() {
   const [amountInput, setAmountInput] = useState(DEFAULT_AMOUNT);
   const amount = normalizeAmount(amountInput);
   const [layout, onLayoutAction] = usePairLayout(state.pairs);
+  const readyTracked = useRef(false);
+
+  useEffect(() => {
+    updateUserPreferences(lang, theme);
+  }, [lang, theme]);
+
+  useEffect(() => {
+    if (state.initialized && !readyTracked.current) {
+      readyTracked.current = true;
+      trackEvent('dashboard_ready');
+    }
+  }, [state.initialized]);
+
+  function handleLayoutAction(action: LayoutAction) {
+    const next = applyLayoutAction(layout, state.pairs, action);
+    if (next !== layout) {
+      switch (action.type) {
+        case 'toggleHidden':
+          trackEvent('pair_visibility_changed', {
+            pair_symbol: action.pair,
+            visible: !isHidden(next, action.pair),
+          });
+          break;
+        case 'showAll':
+          trackEvent('pairs_reset');
+          break;
+        case 'moveBy':
+        case 'moveTo':
+          trackEvent('pair_reordered', {
+            pair_symbol: action.pair,
+            interaction_method: action.type === 'moveBy' ? 'keyboard' : 'drag',
+          });
+          break;
+      }
+    }
+    onLayoutAction(action);
+  }
 
   const summary = useMemo(() => titleSummary(state.pairs, amount), [state.pairs, amount]);
   // 利益が出ている間はタブのタイトルにも出す。文字列を1つ設定するだけなので常に有効にしている
@@ -43,14 +82,24 @@ export function App() {
       <Dashboard
         state={state}
         lang={lang}
-        onLangChange={setLang}
+        onLangChange={(next) => {
+          if (next !== lang) {
+            trackEvent('language_changed', { ui_language: next });
+            setLang(next);
+          }
+        }}
         theme={theme}
-        onThemeChange={setTheme}
+        onThemeChange={(next) => {
+          if (next !== theme) {
+            trackEvent('theme_changed', { ui_theme: next });
+            setTheme(next);
+          }
+        }}
         amountInput={amountInput}
         amount={amount}
         onAmountChange={setAmountInput}
         layout={layout}
-        onLayoutAction={onLayoutAction}
+        onLayoutAction={handleLayoutAction}
       />
     </LangContext.Provider>
   );
