@@ -44,7 +44,10 @@ describe('アクセス解析', () => {
     analytics.initializeAnalytics();
     const scripts = document.querySelectorAll<HTMLScriptElement>('script[data-analytics]');
     expect(scripts).toHaveLength(1);
-    expect(scripts[0]?.src).toMatch(/^https:\/\/www.googletagmanager.com\/gtag\/js\?id=G-/);
+    const tagUrl = new URL(scripts[0]?.src ?? '');
+    expect(tagUrl.origin).toBe('https://www.googletagmanager.com');
+    expect(tagUrl.pathname).toBe('/gtag/js');
+    expect(tagUrl.searchParams.get('id')).toMatch(/^G-/);
     const commands = window.dataLayer?.map((command) => Array.from(command));
     expect(commands?.filter((command) => command[0] === 'config')).toHaveLength(1);
     expect(commands?.find((command) => command[0] === 'config')?.[2]).toMatchObject({
