@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackEvent } from '../analytics';
 import { EXCHANGE_FEE_INFO } from '../exchanges';
 import { formatPercent } from '../format/number';
 import { useT } from '../i18n';
@@ -24,7 +25,12 @@ export function FeeNote({ exchanges }: FeeNoteProps) {
           type="button"
           className="info__button"
           aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            if (!open) {
+              trackEvent('fee_info_opened');
+            }
+            setOpen(!open);
+          }}
         >
           <span className="info__icon" aria-hidden="true">
             i

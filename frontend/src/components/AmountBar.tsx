@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+import { trackEvent } from '../analytics';
 import { signOf } from '../format/number';
 import { useT } from '../i18n';
 
@@ -11,6 +13,7 @@ interface AmountBarProps {
 /** 取引金額の入力。各ペアの計算に効く設定なので、カードのすぐ上に置く */
 export function AmountBar({ amountInput, quote, onAmountChange }: AmountBarProps) {
   const t = useT();
+  const edited = useRef(false);
   return (
     <div className="amount-bar">
       <label className="amount">
@@ -22,7 +25,16 @@ export function AmountBar({ amountInput, quote, onAmountChange }: AmountBarProps
           step="any"
           value={amountInput}
           aria-invalid={signOf(amountInput) !== 1}
-          onChange={(e) => onAmountChange(e.target.value)}
+          onChange={(e) => {
+            edited.current = true;
+            onAmountChange(e.target.value);
+          }}
+          onBlur={() => {
+            if (edited.current) {
+              trackEvent('amount_changed');
+              edited.current = false;
+            }
+          }}
         />
         <span className="muted">{quote}</span>
       </label>
