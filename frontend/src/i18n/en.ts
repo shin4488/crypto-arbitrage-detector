@@ -34,6 +34,7 @@ export const en: Dict = {
   hidePair: 'Hide this pair',
   showPairs: 'Show pairs',
   showAll: 'Show all',
+  reorderPairsHelp: 'Drag and drop pairs to reorder',
   noVisiblePairs: 'No pairs shown. Pick some under "Show pairs" above',
 
   colExchange: 'Exchange',

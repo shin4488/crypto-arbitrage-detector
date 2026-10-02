@@ -2,6 +2,7 @@ import type { KeyboardEvent } from 'react';
 import { type DragReorder, dragEvents } from '../hooks/useDragReorder';
 import { useT } from '../i18n';
 import { isHidden, type LayoutAction, type PairLayout } from '../state/layout';
+import { GripIcon } from './GripIcon';
 
 interface PairFilterProps {
   /** 表示順に並んだ全ペア（隠しているものも含む） */
@@ -15,7 +16,7 @@ interface PairFilterProps {
 /**
  * 表示するペアを選ぶチップの列。押し込まれているペアだけカードが出る。
  * 隠したペアもここに残るので、何を隠しているかと戻し方が同じ場所で分かる。
- * チップをドラッグすると並び替えられる（横に並ぶので ←→ キーでも動かせる）。カードと同じ並び順を動かす。
+ * チップ全体をドラッグすると並べ替えられる（←→ キーでも動かせる）。カードと同じ並び順を動かす。
  * fieldset にしているのは、支援技術に「表示するペア」という一つのまとまりとして伝えるため。
  */
 export function PairFilter({ pairs, layout, onAction, drag }: PairFilterProps) {
@@ -34,7 +35,7 @@ export function PairFilter({ pairs, layout, onAction, drag }: PairFilterProps) {
         <button
           key={p.pair}
           type="button"
-          className={`chip ${drag.dragging === p.pair ? 'is-dragging' : ''} ${drag.dropTarget === p.pair && drag.dragging !== p.pair ? 'is-drop-target' : ''}`}
+          className={`chip pair-filter__pair ${drag.dragging === p.pair ? 'is-dragging' : ''} ${drag.dropTarget === p.pair && drag.dragging !== p.pair ? 'is-drop-target' : ''}`}
           aria-pressed={!isHidden(layout, p.pair)}
           title={t.dragChipToReorder}
           draggable
@@ -42,6 +43,7 @@ export function PairFilter({ pairs, layout, onAction, drag }: PairFilterProps) {
           onKeyDown={handleKey(p.pair)}
           {...dragEvents(drag.handlers, p.pair)}
         >
+          <GripIcon />
           {p.pair}
         </button>
       ))}
@@ -53,6 +55,7 @@ export function PairFilter({ pairs, layout, onAction, drag }: PairFilterProps) {
       >
         {t.showAll}
       </button>
+      {pairs.length > 1 && <p className="pair-filter__help muted small">{t.reorderPairsHelp}</p>}
     </fieldset>
   );
 }
