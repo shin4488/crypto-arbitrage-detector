@@ -36,6 +36,7 @@ export const ja = {
   hidePair: 'このペアを隠す',
   showPairs: '表示するペア',
   showAll: 'すべて表示',
+  reorderPairsHelp: 'ドラッグ＆ドロップで並べ替え',
   noVisiblePairs: '表示するペアがありません。上の「表示するペア」から選んでください',
 
   colExchange: '取引所',

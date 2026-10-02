@@ -8,6 +8,7 @@ import { bestDirection, exchangeName } from '../state/selectors';
 import { planForAmount } from '../state/trade';
 import { Age } from './Age';
 import { Flash } from './Flash';
+import { GripIcon } from './GripIcon';
 
 interface PairBoardProps {
   pair: PairSnapshot;
@@ -110,23 +111,6 @@ export const PairBoard = memo(function PairBoard({
     </section>
   );
 });
-
-/**
- * 取っ手の6つの点。文字の「⋮⋮」はフォント次第で細く小さくなり見つけにくかったので、点を描いて大きさをそろえる。
- * アイコン集を依存に足すほどではないので手で描いている（目のアイコンも同じ）
- */
-function GripIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="currentColor">
-      <circle cx="9" cy="5" r="2.2" />
-      <circle cx="15" cy="5" r="2.2" />
-      <circle cx="9" cy="12" r="2.2" />
-      <circle cx="15" cy="12" r="2.2" />
-      <circle cx="9" cy="19" r="2.2" />
-      <circle cx="15" cy="19" r="2.2" />
-    </svg>
-  );
-}
 
 /** 「隠す」の目のアイコン */
 function EyeOffIcon() {

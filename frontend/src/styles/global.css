@@ -402,6 +402,10 @@ tbody th {
   padding: 0;
 }
 
+.pair-filter__help {
+  flex-basis: 100%;
+}
+
 .chip {
   padding: 5px 16px;
   border: 1px solid var(--line);
@@ -427,6 +431,22 @@ tbody th {
 .chip:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* ドラッグできるペアを、表示切り替え専用のボタンと見分けられるようにする。 */
+.pair-filter__pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: grab;
+}
+
+.pair-filter__pair:active {
+  cursor: grabbing;
+}
+
+.pair-filter__pair svg {
+  pointer-events: none;
 }
 
 /* 配色と言語の切り替え。ピル型に選択肢を並べ、選択中だけ色を反転させる */
