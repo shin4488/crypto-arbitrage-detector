@@ -86,6 +86,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: イメージをビルド
         run: docker build -t crypto-arbitrage-detector:ci .
+      # backend ジョブの govulncheck は CI の Go で検査するため、本番に入るバイナリを Dockerfile の Go のまま検査する
+      - name: 実行バイナリの既知の脆弱性検査（govulncheck）
+        run: |
+          docker build --target backend -t crypto-arbitrage-detector:ci-backend .
+          docker run --rm crypto-arbitrage-detector:ci-backend \
+            go run golang.org/x/vuln/cmd/govulncheck@latest -mode=binary /out/server
       - name: 起動してヘルスチェック
         run: |
           docker run -d --name app -p 8080:8080 crypto-arbitrage-detector:ci
