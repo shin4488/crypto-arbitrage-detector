@@ -23,7 +23,7 @@ COPY frontend/src ./src
 RUN yarn build
 
 # --- バックエンドのビルド ---
-FROM golang:1.27-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS backend
+FROM golang:1.27-alpine@sha256:d530cf60723abf1ffae0cd16bb546b379ec0550d2f3815e5b16ed69dbc00fba4 AS backend
 WORKDIR /app/backend
 ENV CGO_ENABLED=0
 COPY backend/go.mod backend/go.sum ./
