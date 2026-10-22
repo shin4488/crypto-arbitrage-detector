@@ -18,6 +18,11 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+      # react と react-dom は同じ版でないと動かないため、まとめて上げる
+      react:
+        patterns:
+          - react
+          - react-dom
     ignore:
       # Node の型定義は動かしている Node のメジャーに合わせて手動で上げる
       - dependency-name: "@types/node"
