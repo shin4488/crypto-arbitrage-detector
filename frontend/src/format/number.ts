@@ -124,12 +124,6 @@ function roundHalfUp(
   return { intPart: s.slice(0, s.length - digits), fracPart: s.slice(s.length - digits) };
 }
 
-/** 10進文字列の小数部の桁数（"65433.79" → 2, "77256" → 0）。価格の刻みに表示桁を合わせるために使う */
-export function fractionDigitsOf(value: string): number {
-  const parsed = parseDecimal(value);
-  return parsed === null ? 0 : parsed.fracPart.replace(/0+$/, '').length;
-}
-
 /** 10進文字列どうしの引き算 a − b。浮動小数点を経由せず、桁をそろえて BigInt で計算する */
 export function subtractDecimals(a: string, b: string): string {
   const pa = parseDecimal(a);
