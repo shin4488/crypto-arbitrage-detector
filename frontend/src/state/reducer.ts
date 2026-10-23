@@ -94,7 +94,10 @@ function upsertEpisode(history: Episode[], episode: Episode): Episode[] {
   return sortHistory([episode, ...history]).slice(0, HISTORY_LIMIT);
 }
 
-/** 開始が新しい順（同時なら id が大きい順） */
+/**
+ * 開始が新しい順（同時なら id が大きい順）。
+ * startedAt はサーバーが UTC・ミリ秒精度の固定形式で送るので、文字列の比較で時刻順になる
+ */
 function sortHistory(history: Episode[]): Episode[] {
   return history.slice().sort((a, b) => b.startedAt.localeCompare(a.startedAt) || b.id - a.id);
 }

@@ -73,7 +73,6 @@ type LogConfig struct {
 }
 
 // Default は組み込みの設定（backend/config.json をビルド時に埋め込んだもの）。
-// JSON にはコメントを書けないので、各キーの意味は README の「設定」に書いてある。
 // 手数料率は各取引所の一般ユーザー向け spot taker 手数料（2026年時点）。
 func Default() (Config, error) {
 	var cfg Config

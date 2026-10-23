@@ -110,7 +110,7 @@ describe('Dashboard', () => {
     renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     expect(within(btc).getByText('利益なし')).toBeTruthy();
-    // 方向は「買い」を青、「売り」を売り色で示す（表の買値・売値と同じ色）
+    // 方向は「買い」を青、「売り」を橙で示す（表の買値・売値と同じ色）
     const buy = within(btc).getByText('Binanceで買い');
     const sell = within(btc).getByText('OKXで売り');
     expect(buy.className).toContain('buy');

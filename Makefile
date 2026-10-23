@@ -14,7 +14,7 @@ YARN ?= corepack yarn
 help: ## タスク一覧を表示
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
 
-fmt: backend-fmt frontend-fmt ## バックエンドとフロントエンドのコード整形（Claude Code の hook もこれを使う）
+fmt: backend-fmt frontend-fmt ## バックエンドとフロントエンドのコード整形
 
 test: backend-test frontend-test ## バックエンドとフロントエンドのテストを実行
 
@@ -26,7 +26,7 @@ backend-fmt: ## バックエンドの整形（gofmt + goimports）
 backend-test: ## バックエンドのテスト（Docker 内の Go で実行）
 	$(MAKE) -C backend test
 
-backend-lint: ## バックエンドの lint（golangci-lint）
+backend-lint: ## バックエンドの静的検査（go vet・golangci-lint）
 	$(MAKE) -C backend vet lint
 
 frontend-fmt: ## フロントエンドの整形と安全な自動修正（Biome）。直せない lint の指摘が残れば失敗する

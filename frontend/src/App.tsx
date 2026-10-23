@@ -44,6 +44,7 @@ export function App() {
   }, [state.initialized]);
 
   function handleLayoutAction(action: LayoutAction) {
+    // 計測するか（設定が変わるか）と変化後の表示状態を求める。設定の更新と保存は onLayoutAction が行う
     const next = applyLayoutAction(layout, state.pairs, action);
     if (next !== layout) {
       switch (action.type) {

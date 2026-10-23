@@ -1,19 +1,15 @@
 # Crypto Arbitrage Detector
 
-暗号資産取引所（Binance および OKX）のオーダーブック（板情報）をリアルタイムに監視し、取引所間の価格差から手数料を差し引いた「純利益が見込める機会」を検知・可視化するツールです。
+暗号資産取引所（Binance と OKX）の板（オーダーブック）をリアルタイムに監視し、取引所間の価格差から手数料を差し引いても利益が出る機会を検知して画面に表示するツールです。
 
 ※ 本ツールは価格差の検知と画面表示のみを行い、自動発注は行いません。
 
----
-
 ## 主な特徴
 
-- **リアルタイム検知**: 各取引所のWebSocketフィードを常時受信し、ミリ秒単位でオーダーブックを突き合わせて利鞘を算出。
-- **実効利益の計算**: 単純な最良気配の比較だけでなく、板の厚み（深さ）とtaker手数料率（往復分）を考慮した現実的な利益を試算。
-- **直感的なダッシュボード**: 有利な売買方向、推定純利益、各取引所の最良気配、検知履歴をリアルタイムに表示。
-- **シングルコンテナ配信**: ビルド済みReactフロントエンドをGoバイナリに内包し、単一のコンテナでシンプルに稼働。
-
----
+- 各取引所の板を WebSocket で受信し、板が更新されるたびに両方向（一方で買って他方で売る）の損益を計算します。
+- 最良気配だけでなく板の各段を突き合わせ、買いと売りの taker 手数料を引いても利益が出る数量と純利益を求めます。
+- 画面には、有利な売買の方向、指定した取引金額での損益、各取引所の最良気配、検知履歴を表示します。
+- ビルドしたフロントエンドを Go のバイナリに埋め込み、1つのコンテナで動かします。
 
 ## アーキテクチャ
 
@@ -41,15 +37,13 @@ flowchart LR
     WS -->|WebSocket| UI
 ```
 
----
-
 ## 技術スタック
 
-- **バックエンド**: Go, Gorilla WebSocket, Decimal
-- **フロントエンド**: React, TypeScript, Vite, Biome
-- **インフラ**: Docker, Docker Compose
-
----
+| 対象 | 使用技術 |
+| --- | --- |
+| バックエンド | Go、gorilla/websocket、shopspring/decimal |
+| フロントエンド | React、TypeScript、Vite、Biome |
+| 実行環境 | Docker、Docker Compose |
 
 ## クイックスタート
 
@@ -72,38 +66,33 @@ make dev
 - フロントエンド（開発UI）: `http://localhost:3000`
 - バックエンド（API / WebSocket）: `http://localhost:8080`
 
----
-
 ## 主なコマンド
 
 ```bash
 make fmt    # コード整形（Go: gofmt/goimports, TS: Biome）
-make test   # テスト実行（競合状態検知付き）
-make lint   # 静的解析（golangci-lint, 型検査, Biome）
+make test   # テスト実行（Go, Vitest）
+make lint   # 静的検査（go vet, golangci-lint, 型検査, Biome）
 ```
-
----
 
 ## 設定方法
 
-監視対象の通貨ペアや取引所の手数料率は `backend/config.json` で管理されています。
+監視対象の通貨ペアや取引所の手数料率は `backend/config.json` に書きます。このファイルはビルド時にバイナリへ埋め込まれます。開発環境（`make dev`）では変更を検知してサーバーが自動で再起動し、本番相当（`docker compose up --build`）ではイメージを作り直したときに反映されます。
 
-```json
-{
-  "server": {
-    "addr": ":8080"
-  },
-  "pairs": [
-    "BTC/USDT",
-    "ETH/USDT"
-  ]
-}
-```
+| キー | 内容 |
+| --- | --- |
+| `server.addr` | 待ち受けアドレス |
+| `server.allowedOrigins` | WebSocket の接続を許可する追加の Origin。同一オリジンは常に許可する |
+| `exchanges` | 取引所ごとの `id`（`binance`・`okx`）、表示名 `name`、taker 手数料率 `takerFeeRate`（`0.001` = 0.1%）、接続先 `wsUrl`（省略時は取引所の既定の URL） |
+| `pairs` | 監視する通貨ペア（`BASE/QUOTE`）。並び順が画面の初期表示順になる |
+| `history.limit` | サーバーが保持する検知履歴の件数 |
+| `log.level`・`log.format` | ログの出力レベル（`debug`・`info`・`warn`・`error`）と形式（`text`・`json`） |
 
-- **通貨ペアの追加**: `pairs` 配列に `"SOL/USDT"` などのシンボルを追記して再起動するだけで、自動的に監視が開始されます。
-- **環境変数による上書き**: `ARB_CONFIG` で任意の設定JSONファイルを指定できるほか、`ARB_ADDR` や `ARB_LOG_LEVEL` などの環境変数にも対応しています。
+起動時には、埋め込んだ設定を次の順に上書きできます（下の行が優先）。
 
----
+| 方法 | 上書きする内容 |
+| --- | --- |
+| `-config` オプション（省略時は環境変数 `ARB_CONFIG`）で指定した JSON ファイル | ファイルに書いたキー |
+| 環境変数 `ARB_ADDR`・`ARB_LOG_LEVEL`・`ARB_LOG_FORMAT` | `server.addr`・`log.level`・`log.format` |
 
 ## アクセス解析
 
@@ -140,7 +129,7 @@ crypto-arbitrage-detector/
 │   │   ├── arbitrage/         # 板突き合わせ・利鞘計算ロジック
 │   │   ├── engine/            # 板の保持・判定・機会の履歴管理
 │   │   ├── exchange/          # 取引所別WebSocketクライアント（Binance / OKX）
-│   │   └── server/            # クライアント配信・HTTPハンドラ
+│   │   └── server/            # クライアントへの WebSocket 配信
 │   └── config.json            # 通貨ペア・取引所設定
 └── frontend/
     └── src/
