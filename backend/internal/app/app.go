@@ -86,9 +86,6 @@ func New(cfg config.Config, log *slog.Logger) (*App, error) {
 	return a, nil
 }
 
-// Handler は HTTP ハンドラ（テストで httptest に載せるために公開）。
-func (a *App) Handler() http.Handler { return a.mux }
-
 // Run は取引所への接続と HTTP サーバーを開始し、ctx が終わるまで動き続ける。
 func (a *App) Run(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)

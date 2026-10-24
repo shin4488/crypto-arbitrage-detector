@@ -30,7 +30,7 @@ type Options struct {
 	PingInterval time.Duration
 	// PongTimeout はこの時間クライアントから何も届かなければ切断する。PingInterval より長くする。
 	PongTimeout time.Duration
-	// AllowedOrigins は接続を許可する Origin。空なら同一オリジン（Host と一致）のみ許可する。
+	// AllowedOrigins は、同一オリジン（Host と一致）に加えて接続を許可する Origin。
 	AllowedOrigins []string
 }
 

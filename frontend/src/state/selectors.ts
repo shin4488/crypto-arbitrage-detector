@@ -2,7 +2,7 @@ import { formatDecimal } from '../format/number';
 import type { Direction, ExchangeInfo, PairSnapshot } from '../protocol/types';
 import { planForAmount } from './trade';
 
-/** 利益が出ている方向（ペアごとに多くても1つ）。タブ通知やバッジの表示に使う */
+/** 利益が出ている方向（ペアごとに多くても1つ） */
 export function profitableDirection(pair: PairSnapshot): Direction | null {
   return pair.directions.find((d) => d.profitable) ?? null;
 }

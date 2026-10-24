@@ -45,7 +45,7 @@ vet: ## 静的検査（go vet）
 test: ## テスト実行
 	$(GO) test ./...
 
-test-race: ## データ競合の検出付きテスト（CGO が必要なので golang:1.27 などの glibc イメージかローカルの Go で実行する）
+test-race: ## データ競合の検出付きテスト（cgo が必要で、CGO_ENABLED=0 の既定の Docker 実行では動かない。ローカルの Go で GO=go を付けて実行する）
 	$(GO) test -race ./...
 
 cover: ## カバレッジ計測

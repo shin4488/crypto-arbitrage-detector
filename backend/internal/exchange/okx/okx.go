@@ -55,7 +55,6 @@ type message struct {
 	Data  []struct {
 		Asks [][]string `json:"asks"`
 		Bids [][]string `json:"bids"`
-		TS   string     `json:"ts"`
 	} `json:"data"`
 }
 
@@ -97,7 +96,7 @@ func (f *Feed) Run(ctx context.Context) {
 	})
 }
 
-// SubscribeRequest は購読リクエストの JSON を返す（テストや動作確認用に公開）。
+// SubscribeRequest は購読リクエストの JSON を返す。
 func SubscribeRequest(pairs []domain.Pair) ([]byte, error) {
 	req := subscribeRequest{Op: "subscribe", Args: make([]subscribeArg, 0, len(pairs))}
 	for _, p := range pairs {

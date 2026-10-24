@@ -3,7 +3,6 @@ import {
   divideDecimals,
   formatDecimal,
   formatPercent,
-  fractionDigitsOf,
   multiplyDecimals,
   quantityFractionDigits,
   shiftDecimalPoint,
@@ -83,15 +82,6 @@ describe('signOf', () => {
     expect(signOf('0.000')).toBe(0);
     expect(signOf('-0')).toBe(0);
     expect(signOf('x')).toBe(0);
-  });
-});
-
-describe('fractionDigitsOf', () => {
-  it('小数部の桁数を返す', () => {
-    expect(fractionDigitsOf('65433.79')).toBe(2);
-    expect(fractionDigitsOf('77256')).toBe(0);
-    expect(fractionDigitsOf('2407.10')).toBe(1);
-    expect(fractionDigitsOf('abc')).toBe(0);
   });
 });
 

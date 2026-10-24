@@ -178,7 +178,7 @@ func TestEvaluate_WalksDepth(t *testing.T) {
 		assertEq(t, "NetSpread", r.NetSpread, "2.5")
 	})
 
-	t.Run("手数料込みで赤字になる段で走査を止める", func(t *testing.T) {
+	t.Run("手数料込みで黒字の段は2段目以降も取り込む", func(t *testing.T) {
 		t.Parallel()
 		buy := book("binance", nil, []domain.Level{lv("100", "1"), lv("100.15", "1")})
 		sell := book("okx", []domain.Level{lv("100.5", "5")}, nil)
@@ -187,8 +187,7 @@ func TestEvaluate_WalksDepth(t *testing.T) {
 		if !r.Profitable {
 			t.Fatal("1段目は黒字なので機会あり")
 		}
-		// 2段目: 100.5×0.999 − 100.15×1.001 = 100.3995 − 100.25015 = 0.14935 > 0 → まだ黒字
-		// なので2段目も取り込まれる。3段目は無いので DepthExhausted。
+		// 2段目: 100.5×0.999 − 100.15×1.001 = 100.3995 − 100.25015 = 0.14935 > 0 → まだ黒字なので取り込む。3段目は無いので DepthExhausted。
 		assertEq(t, "Quantity", r.Quantity, "2")
 		if !r.DepthExhausted {
 			t.Fatal("買い元の板を使い切ったので DepthExhausted=true")

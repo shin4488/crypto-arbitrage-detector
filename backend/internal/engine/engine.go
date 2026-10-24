@@ -37,7 +37,7 @@ type Config struct {
 type Quote struct {
 	Bid domain.Level
 	Ask domain.Level
-	// BidLevels / AskLevels は受信した板の段数。板の深さの目安として画面に出す。
+	// BidLevels / AskLevels は受信した板の段数。
 	BidLevels int
 	AskLevels int
 	// UpdatedAt は板を受信した時刻。

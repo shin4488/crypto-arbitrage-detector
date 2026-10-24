@@ -42,7 +42,7 @@ export function formatDecimal(value: string, options: FormatOptions = {}): strin
   return options.signed && !/^[0,.]*$/.test(body) ? `+${body}` : body;
 }
 
-/** 比率（0.01 = 1%）をパーセント表記にする。例: "0.0000465" → "0.0047%" */
+/** 比率（0.01 = 1%）をパーセント表記にする。正の値には + を付ける。例: "0.0000465" → "+0.0047%" */
 export function formatPercent(ratio: string, maxFractionDigits = 4): string {
   const shifted = shiftDecimalPoint(ratio, 2);
   if (shifted === null) {
@@ -122,12 +122,6 @@ function roundHalfUp(
   }
   const s = n.toString().padStart(digits + 1, '0');
   return { intPart: s.slice(0, s.length - digits), fracPart: s.slice(s.length - digits) };
-}
-
-/** 10進文字列の小数部の桁数（"65433.79" → 2, "77256" → 0）。価格の刻みに表示桁を合わせるために使う */
-export function fractionDigitsOf(value: string): number {
-  const parsed = parseDecimal(value);
-  return parsed === null ? 0 : parsed.fracPart.replace(/0+$/, '').length;
 }
 
 /** 10進文字列どうしの引き算 a − b。浮動小数点を経由せず、桁をそろえて BigInt で計算する */

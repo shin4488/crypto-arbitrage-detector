@@ -215,7 +215,7 @@ func TestRun_ReconnectsOnReadTimeout(t *testing.T) {
 	statuses := newStatusLog()
 	opts := fastOptions(srv.url())
 	opts.ReadTimeout = 50 * time.Millisecond
-	// ping フレームで ReadTimeout が延びないよう keep-alive を無効化する（pong は ReadMessage に届かない）
+	// keep-alive を送らず、サーバーから何も届かない状態にする
 	opts.KeepAlive = func(*websocket.Conn) error { return nil }
 	opts.OnStatus = statuses.record
 

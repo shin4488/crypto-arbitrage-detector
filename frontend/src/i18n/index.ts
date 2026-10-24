@@ -24,7 +24,3 @@ export const LangContext = createContext<Lang>('ja');
 export function useT(): Dict {
   return getDict(useContext(LangContext));
 }
-
-export function useLang(): Lang {
-  return useContext(LangContext);
-}

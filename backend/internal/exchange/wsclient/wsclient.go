@@ -14,7 +14,7 @@ import (
 )
 
 // ErrReconnect は OnMessage から返すと現在の接続を捨てて再接続する。
-// 購読の拒否など、接続し直さないと回復しない状況で使う。
+// 接続し直さないと回復しない状況で使う。
 var ErrReconnect = errors.New("wsclient: 再接続が必要")
 
 // Options は接続の設定。
@@ -31,8 +31,8 @@ type Options struct {
 	// KeepAlive は KeepAliveInterval ごとに呼ばれる。nil なら WebSocket の ping フレームを送る。
 	KeepAlive         func(conn *websocket.Conn) error
 	KeepAliveInterval time.Duration
-	// ReadTimeout の間なにも届かなければ、接続が切れたとみなしてつなぎ直す。
-	// 相場が静かでも取引所は ping や pong を送ってくるので、通常はこの時間内に何かしら届く。
+	// ReadTimeout の間データのメッセージが届かなければ、接続が切れたとみなしてつなぎ直す。
+	// ping・pong の制御フレームは ReadMessage から返らず受信期限を延ばさないため、板の更新や OKX の "pong"（文字列のメッセージ）が届く間隔より長くする。
 	ReadTimeout      time.Duration
 	HandshakeTimeout time.Duration
 	// MinBackoff / MaxBackoff は再接続の待ち時間（指数的に増やし、ジッタを加える）。
@@ -96,7 +96,7 @@ func Run(ctx context.Context, opts Options) {
 			return
 		}
 		if errors.Is(err, errSessionEstablished) {
-			// 接続と購読まで成功した後の切断なら、次回はすぐつなぎ直す。
+			// 接続と購読まで成功した後の切断なら、待ち時間を最短に戻してつなぎ直す。
 			backoff = opts.MinBackoff
 			log.Warn("接続が切れたため再接続します", "wait", backoff)
 		} else {
