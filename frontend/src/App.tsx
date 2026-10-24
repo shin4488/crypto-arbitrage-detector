@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { trackEvent, updateUserPreferences } from './analytics';
 import { Dashboard } from './components/Dashboard';
 import { useArbitrageFeed } from './hooks/useArbitrageFeed';
@@ -43,31 +43,41 @@ export function App() {
     }
   }, [state.initialized]);
 
-  function handleLayoutAction(action: LayoutAction) {
-    // trackEvent を呼ぶか（設定が変わるか）と送る visible の値を決めるため、ここでも操作を適用した結果を求める。設定の更新と保存は onLayoutAction が行う
-    const next = applyLayoutAction(layout, state.pairs, action);
-    if (next !== layout) {
-      switch (action.type) {
-        case 'toggleHidden':
-          trackEvent('pair_visibility_changed', {
-            pair_symbol: action.pair,
-            visible: !isHidden(next, action.pair),
-          });
-          break;
-        case 'showAll':
-          trackEvent('pairs_reset');
-          break;
-        case 'moveBy':
-        case 'moveTo':
-          trackEvent('pair_reordered', {
-            pair_symbol: action.pair,
-            interaction_method: action.type === 'moveBy' ? 'keyboard' : 'drag',
-          });
-          break;
+  // 操作の関数を作り直さずに最新の設定とペア一覧を参照できるようにする（カードの memo を効かせるため）
+  const layoutRef = useRef(layout);
+  layoutRef.current = layout;
+  const pairsRef = useRef(state.pairs);
+  pairsRef.current = state.pairs;
+
+  const handleLayoutAction = useCallback(
+    (action: LayoutAction) => {
+      // trackEvent を呼ぶか（設定が変わるか）と送る visible の値を決めるため、ここでも操作を適用した結果を求める。設定の更新と保存は onLayoutAction が行う
+      const current = layoutRef.current;
+      const next = applyLayoutAction(current, pairsRef.current, action);
+      if (next !== current) {
+        switch (action.type) {
+          case 'toggleHidden':
+            trackEvent('pair_visibility_changed', {
+              pair_symbol: action.pair,
+              visible: !isHidden(next, action.pair),
+            });
+            break;
+          case 'showAll':
+            trackEvent('pairs_reset');
+            break;
+          case 'moveBy':
+          case 'moveTo':
+            trackEvent('pair_reordered', {
+              pair_symbol: action.pair,
+              interaction_method: action.type === 'moveBy' ? 'keyboard' : 'drag',
+            });
+            break;
+        }
       }
-    }
-    onLayoutAction(action);
-  }
+      onLayoutAction(action);
+    },
+    [onLayoutAction],
+  );
 
   const summary = useMemo(() => titleSummary(state.pairs, amount), [state.pairs, amount]);
   // 利益が出ている間はタブのタイトルにも出す。文字列を1つ設定するだけなので常に有効にしている
