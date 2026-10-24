@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -52,7 +53,14 @@ func TestNewHandler_WithoutBuild(t *testing.T) {
 	h := webui.NewHandler(fstest.MapFS{".gitkeep": {Data: nil}})
 	resp := get(t, h, "/")
 	if resp.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("未ビルドなら 503: %d", resp.StatusCode)
+		t.Fatalf("ビルド結果を埋め込んでいなければ 503: %d", resp.StatusCode)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	// frontend をビルドしただけでは埋め込まれないため、画面を開ける手順として開発サーバーと Docker イメージを案内する
+	for _, want := range []string{"make dev", "http://localhost:3000", "docker compose up --build"} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("案内に %q が無い: %s", want, body)
+		}
 	}
 }
 

@@ -28,13 +28,13 @@ func Handler() http.Handler {
 }
 
 // NewHandler は任意の fs.FS から静的ファイルを配信するハンドラを返す（テスト用に公開）。
-// index.html が無い（フロントエンド未ビルド）場合は 503 で案内を返す。
+// index.html が無い（dist/ にビルド結果をコピーしていない）場合は、画面を開く手順を 503 で案内する。
 func NewHandler(fsys fs.FS) http.Handler {
 	if _, err := fs.Stat(fsys, "index.html"); errors.Is(err, fs.ErrNotExist) {
 		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte("フロントエンドがビルドされていません。frontend で `npm run build` を実行するか、Docker イメージを使ってください。\n"))
+			_, _ = w.Write([]byte("フロントエンドのビルド結果が埋め込まれていません。開発時は `make dev` で起動し、http://localhost:3000 を開いてください。本番相当の画面は `docker compose up --build` で起動します。\n"))
 		})
 	}
 	files := http.FileServerFS(fsys)
