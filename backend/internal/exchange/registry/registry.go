@@ -14,14 +14,13 @@ import (
 
 // Entry は登録された取引所の情報。
 type Entry struct {
-	Name       string
-	DefaultURL string
-	New        func(exchange.FeedConfig) exchange.Feed
+	Name string
+	New  func(exchange.FeedConfig) exchange.Feed
 }
 
 var entries = map[domain.Exchange]Entry{
-	binance.ID: {Name: binance.Name, DefaultURL: binance.DefaultURL, New: func(c exchange.FeedConfig) exchange.Feed { return binance.NewFeed(c) }},
-	okx.ID:     {Name: okx.Name, DefaultURL: okx.DefaultURL, New: func(c exchange.FeedConfig) exchange.Feed { return okx.NewFeed(c) }},
+	binance.ID: {Name: binance.Name, New: func(c exchange.FeedConfig) exchange.Feed { return binance.NewFeed(c) }},
+	okx.ID:     {Name: okx.Name, New: func(c exchange.FeedConfig) exchange.Feed { return okx.NewFeed(c) }},
 }
 
 // Lookup は取引所IDに対応する登録情報を返す。

@@ -37,7 +37,7 @@ func TestSupportedIDs(t *testing.T) {
 	if len(ids) != 2 || ids[0] != "binance" || ids[1] != "okx" {
 		t.Fatalf("ids=%v", ids)
 	}
-	if e, ok := registry.Lookup("okx"); !ok || e.Name != "OKX" || e.DefaultURL == "" {
+	if e, ok := registry.Lookup("okx"); !ok || e.Name != "OKX" {
 		t.Fatalf("Lookup=%+v ok=%v", e, ok)
 	}
 }

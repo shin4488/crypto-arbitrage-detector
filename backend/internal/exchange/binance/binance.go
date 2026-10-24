@@ -52,9 +52,8 @@ func StreamURL(base string, pairs []domain.Pair) string {
 type combinedMessage struct {
 	Stream string `json:"stream"`
 	Data   struct {
-		LastUpdateID int64      `json:"lastUpdateId"`
-		Bids         [][]string `json:"bids"`
-		Asks         [][]string `json:"asks"`
+		Bids [][]string `json:"bids"`
+		Asks [][]string `json:"asks"`
 	} `json:"data"`
 }
 

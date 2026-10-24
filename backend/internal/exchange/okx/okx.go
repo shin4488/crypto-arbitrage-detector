@@ -55,7 +55,6 @@ type message struct {
 	Data  []struct {
 		Asks [][]string `json:"asks"`
 		Bids [][]string `json:"bids"`
-		TS   string     `json:"ts"`
 	} `json:"data"`
 }
 
