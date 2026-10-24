@@ -42,7 +42,7 @@ export function formatDecimal(value: string, options: FormatOptions = {}): strin
   return options.signed && !/^[0,.]*$/.test(body) ? `+${body}` : body;
 }
 
-/** 比率（0.01 = 1%）をパーセント表記にする。例: "0.0000465" → "0.0047%" */
+/** 比率（0.01 = 1%）をパーセント表記にする。正の値には + を付ける。例: "0.0000465" → "+0.0047%" */
 export function formatPercent(ratio: string, maxFractionDigits = 4): string {
   const shifted = shiftDecimalPoint(ratio, 2);
   if (shifted === null) {
