@@ -80,8 +80,8 @@ describe('通貨ペアの並べ替え', () => {
     expect(cardOrder()).toEqual(['ETH/USDT', 'BTC/USDT']);
   });
 
-  it('ドラッグを取り消した場合は順番も表示対象も変わらない', () => {
-    render(<StoredDashboard lang="en" />);
+  it('ドラッグを取り消した場合は順番も表示対象も変わらず、開き直しても元の順番のまま', () => {
+    const view = render(<StoredDashboard lang="en" />);
     const filter = screen.getByRole('group', { name: /Show pairs/ });
     expect(within(filter).getByText('Drag and drop pairs to reorder')).toBeTruthy();
     const eth = within(filter).getByRole('button', { name: 'ETH/USDT' });
@@ -92,6 +92,8 @@ describe('通貨ペアの並べ替え', () => {
     expect(cardOrder()).toEqual(['BTC/USDT', 'ETH/USDT']);
     expect(eth.getAttribute('aria-pressed')).toBe('true');
     expect(btc.getAttribute('aria-pressed')).toBe('true');
-    expect(localStorage.getItem('arb.pairLayout')).toBeNull();
+    view.unmount();
+    render(<StoredDashboard lang="en" />);
+    expect(cardOrder()).toEqual(['BTC/USDT', 'ETH/USDT']);
   });
 });

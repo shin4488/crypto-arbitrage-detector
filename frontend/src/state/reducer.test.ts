@@ -70,24 +70,21 @@ describe('reducer', () => {
     expect(s2.history[0]?.endedAt).toBe('2026-09-02T12:00:09.000Z');
   });
 
-  it('履歴は上限件数で打ち切る', () => {
+  it('履歴は上限件数までで、超えたら開始が古いものから捨てる', () => {
+    // init の1件（12:00:00 開始）に、それより後に始まった機会を上限と同じ件数だけ足す
     let s = reducer(initialState, { type: 'messages', messages: [init] });
-    for (let i = 0; i < HISTORY_LIMIT + 10; i++) {
+    const ids = Array.from({ length: HISTORY_LIMIT }, (_, i) => 100 + i);
+    for (const [i, id] of ids.entries()) {
+      const startedAt = new Date(Date.UTC(2026, 8, 2, 13, 0, i)).toISOString();
       s = reducer(s, {
         type: 'messages',
         messages: [
-          {
-            type: 'episode',
-            seq: init.seq + 1 + i,
-            episode: episodeFixture({
-              id: 100 + i,
-              startedAt: `2026-09-02T13:00:${String(i % 60).padStart(2, '0')}.${String(i).padStart(3, '0')}Z`,
-            }),
-          },
+          { type: 'episode', seq: init.seq + 1 + i, episode: episodeFixture({ id, startedAt }) },
         ],
       });
     }
-    expect(s.history).toHaveLength(HISTORY_LIMIT);
+    // いちばん古い init の1件だけが消え、足した分が新しい順に残る
+    expect(s.history.map((e) => e.id)).toEqual(ids.slice().reverse());
   });
 
   it('exchange メッセージで接続状態を更新する', () => {

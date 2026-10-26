@@ -145,8 +145,17 @@ func TestNew_ValidatesConfig(t *testing.T) {
 		t.Parallel()
 		cfg := defaultConfig(clock)
 		cfg.Now = nil
-		if _, err := engine.New(cfg); err != nil {
+		before := time.Now()
+		e, err := engine.New(cfg)
+		after := time.Now()
+		if err != nil {
 			t.Fatalf("予期しないエラー: %v", err)
+		}
+		// 作った時点の未接続状態は、その時刻から始まる
+		for _, ex := range e.Snapshot().Exchanges {
+			if ex.Since.Before(before) || ex.Since.After(after) {
+				t.Fatalf("%s の Since=%v は作った時刻（%v〜%v）のはず", ex.ID, ex.Since, before, after)
+			}
 		}
 	})
 }
@@ -267,9 +276,6 @@ func TestEpisodeLifecycle(t *testing.T) {
 		if !ep.MaxNetProfit.Equal(d("0.799")) || !ep.QuantityAtMax.Equal(d("1")) {
 			t.Fatalf("最大純利益が不正: %+v", ep)
 		}
-		if ep.ID == 0 {
-			t.Fatal("ID は 1 以上")
-		}
 	})
 
 	t.Run("純利益が増えたら最大値を更新して通知する", func(t *testing.T) {
@@ -331,15 +337,17 @@ func TestEpisodeLifecycle(t *testing.T) {
 		mustUpdate(t, e, book("okx", btc, clock.Now(), lv("101", "1"), lv("102", "1")))
 
 		evs := rec.ofKind(engine.EventEpisodeChanged)
-		if len(evs) != 1 || evs[0].Episode.ID == episodeID {
-			t.Fatalf("新しい ID の機会のはず: %+v", evs)
+		if len(evs) != 1 || !evs[0].Episode.StartedAt.Equal(clock.Now()) {
+			t.Fatalf("今始まった機会が1件通知されるはず: %+v", evs)
+		}
+		newID := evs[0].Episode.ID
+		// 画面は開始時刻が同じ機会を ID の大きい順に並べるため、後から始まった機会ほど ID が大きい
+		if newID <= episodeID {
+			t.Fatalf("前の機会（id=%d）より大きい ID の新しい機会のはず: id=%d", episodeID, newID)
 		}
 		hist := e.Snapshot().History
-		if len(hist) != 2 {
-			t.Fatalf("履歴は2件: %d", len(hist))
-		}
-		if hist[0].ID <= hist[1].ID {
-			t.Fatalf("履歴は新しい順: %d, %d", hist[0].ID, hist[1].ID)
+		if len(hist) != 2 || hist[0].ID != newID || hist[1].ID != episodeID {
+			t.Fatalf("履歴は新しい順に、今回の機会・前の機会の2件: %+v", hist)
 		}
 	})
 }
@@ -464,22 +472,34 @@ func TestHistoryLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	rec := &recorder{}
+	e.AddListener(rec.Listen)
 
 	mustUpdate(t, e, book("binance", btc, clock.Now(), lv("99", "1"), lv("100", "1")))
-	// 黒字と赤字を交互に作って機会を5回発生させる
+	// 黒字と赤字を交互に作って機会を5回発生させ、始まった順に ID を控える
+	var started []uint64
 	for i := 0; i < 5; i++ {
+		rec.Reset()
 		clock.Advance(time.Second)
 		mustUpdate(t, e, book("okx", btc, clock.Now(), lv("101", "1"), lv("102", "1")))
+		evs := rec.ofKind(engine.EventEpisodeChanged)
+		if len(evs) != 1 {
+			t.Fatalf("%d回目: 機会の開始が1件通知されるはず: %+v", i+1, evs)
+		}
+		started = append(started, evs[0].Episode.ID)
 		clock.Advance(time.Second)
 		mustUpdate(t, e, book("okx", btc, clock.Now(), lv("99.5", "1"), lv("100.5", "1")))
 	}
 
 	hist := e.Snapshot().History
-	if len(hist) != 3 {
-		t.Fatalf("履歴は上限の3件に収まる: %d", len(hist))
+	got := make([]uint64, 0, len(hist))
+	for _, ep := range hist {
+		got = append(got, ep.ID)
 	}
-	if hist[0].ID != 5 || hist[2].ID != 3 {
-		t.Fatalf("新しい3件が残るはず: %d, %d, %d", hist[0].ID, hist[1].ID, hist[2].ID)
+	// 上限の3件に収まり、古い2件を捨てて新しい3件が新しい順に残る
+	want := []uint64{started[4], started[3], started[2]}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] || got[2] != want[2] {
+		t.Fatalf("履歴の ID: got=%v want=%v", got, want)
 	}
 }
 

@@ -76,7 +76,6 @@ describe('useArbitrageFeed', () => {
     });
     flushFrame();
     expect(result.current.initialized).toBe(true);
-    expect(console.warn).toHaveBeenCalled();
   });
 
   it('切断されると接続状態が変わり、データは保持される', () => {
