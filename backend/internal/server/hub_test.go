@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,7 +17,10 @@ import (
 	"github.com/shin4488/crypto-arbitrage-detector/backend/internal/server"
 )
 
-var btc = domain.Pair{Base: "BTC", Quote: "USDT"}
+var (
+	btc = domain.Pair{Base: "BTC", Quote: "USDT"}
+	eth = domain.Pair{Base: "ETH", Quote: "USDT"}
+)
 
 // fakeState は固定のスナップショットを返す。
 type fakeState struct{ state engine.State }
@@ -34,7 +38,12 @@ type testServer struct {
 
 func newTestServer(t *testing.T, state engine.State, opts server.Options) *testServer {
 	t.Helper()
-	hub := server.NewHub(fakeState{state: state}, opts, nil)
+	return newTestServerWith(t, fakeState{state: state}, opts)
+}
+
+func newTestServerWith(t *testing.T, state server.StateProvider, opts server.Options) *testServer {
+	t.Helper()
+	hub := server.NewHub(state, opts, nil)
 	srv := httptest.NewServer(hub)
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -120,6 +129,66 @@ func TestHub_DropsEventsOlderThanSnapshot(t *testing.T) {
 	got := readMessage(t, conn, time.Second)
 	if got["seq"] != float64(11) {
 		t.Fatalf("古いイベントは捨てられ、新しいものだけ届くはず: %v", got)
+	}
+}
+
+// blockingState は Snapshot が呼ばれたことを called で知らせ、release が閉じられるまで返さない。
+// 初期状態をまだ送れていない（送信が追いついていない）クライアントを作るのに使う。
+type blockingState struct {
+	state   engine.State
+	called  chan struct{}
+	release chan struct{}
+}
+
+func (b *blockingState) Snapshot() engine.State {
+	b.called <- struct{}{}
+	<-b.release
+	return b.state
+}
+
+func TestHub_SendsOnlyLatestPerTargetToClientThatHasNotCaughtUp(t *testing.T) {
+	t.Parallel()
+	st := &blockingState{state: engine.State{Seq: 10}, called: make(chan struct{}, 1), release: make(chan struct{})}
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(st.release) }) }
+	ts := newTestServerWith(t, st, server.Options{})
+	// 失敗して途中で終わっても、止まったままの接続処理を進めてから停止させる（後に登録した後始末が先に動く）
+	t.Cleanup(release)
+	conn := ts.dial(t, nil)
+
+	select {
+	case <-st.called:
+	case <-time.After(time.Second):
+		t.Fatal("接続後に初期状態を取りに来るはず")
+	}
+	// 初期状態を送る前に、同じペアの更新が重なって届く
+	ts.hub.HandleEvent(pairEvent(11, btc))
+	ts.hub.HandleEvent(pairEvent(12, eth))
+	ts.hub.HandleEvent(pairEvent(13, btc))
+	ts.hub.HandleEvent(pairEvent(14, btc))
+	release()
+
+	if init := readMessage(t, conn, time.Second); init["type"] != "init" {
+		t.Fatalf("最初は init のはず: %v", init)
+	}
+	got := map[string]any{}
+	for range 2 {
+		m := readMessage(t, conn, time.Second)
+		pair := m["pair"].(map[string]any)["pair"].(string)
+		if _, dup := got[pair]; dup {
+			t.Fatalf("同じペアの更新は1件にまとまるはず: %s が2回届いた（%v）", pair, m)
+		}
+		got[pair] = m["seq"]
+	}
+	want := map[string]any{"BTC/USDT": float64(14), "ETH/USDT": float64(12)}
+	if len(got) != len(want) || got["BTC/USDT"] != want["BTC/USDT"] || got["ETH/USDT"] != want["ETH/USDT"] {
+		t.Fatalf("ペアごとに最新の1件だけが届くはず: got=%v want=%v", got, want)
+	}
+
+	// 追いついた後の更新は、まとめた分の残りが無く、すぐに届く
+	ts.hub.HandleEvent(pairEvent(15, eth))
+	if next := readMessage(t, conn, time.Second); next["seq"] != float64(15) {
+		t.Fatalf("次に届くのは新しい更新のはず: %v", next)
 	}
 }
 
