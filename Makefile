@@ -48,7 +48,7 @@ dev: ## 開発用に起動（画面 http://localhost:3000、バックエンド 8
 	docker compose --profile dev up backend-dev frontend-dev
 
 down: ## 停止
-	docker compose down
+	docker compose --profile dev down
 
 logs: ## ログを表示
 	docker compose logs -f
