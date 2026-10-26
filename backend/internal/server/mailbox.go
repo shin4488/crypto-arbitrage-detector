@@ -1,6 +1,10 @@
 package server
 
-import "sync"
+import (
+	"cmp"
+	"slices"
+	"sync"
+)
 
 // mailbox はクライアントごとの送信待ちメッセージ置き場。
 //
@@ -10,7 +14,6 @@ import "sync"
 type mailbox struct {
 	mu     sync.Mutex
 	items  map[string]mail
-	order  []string
 	signal chan struct{}
 }
 
@@ -27,12 +30,9 @@ func newMailbox() *mailbox {
 	}
 }
 
-// Put はメッセージを置く。同じキーが既にあれば置き換える（順番は最初に置いた位置のまま）。
+// Put はメッセージを置く。同じキーが既にあれば置き換える。
 func (m *mailbox) Put(key string, seq uint64, msg any) {
 	m.mu.Lock()
-	if _, exists := m.items[key]; !exists {
-		m.order = append(m.order, key)
-	}
 	m.items[key] = mail{seq: seq, msg: msg}
 	m.mu.Unlock()
 
@@ -43,19 +43,21 @@ func (m *mailbox) Put(key string, seq uint64, msg any) {
 	}
 }
 
-// Drain は溜まっているメッセージを置いた順に取り出し、空にする。
+// Drain は溜まっているメッセージを seq の昇順に取り出し、空にする。
+// 受信側は受け取った最大の seq 以下を古いメッセージとして捨てるため、置き換えで seq の大きいものが前に来ないようにする。
+// Put はエンジンのロック内から seq の順に呼ばれるので、後で取り出した分は前に取り出した分より seq が大きい。
 func (m *mailbox) Drain() []mail {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m.order) == 0 {
+	if len(m.items) == 0 {
 		return nil
 	}
-	out := make([]mail, 0, len(m.order))
-	for _, key := range m.order {
-		out = append(out, m.items[key])
-		delete(m.items, key)
+	out := make([]mail, 0, len(m.items))
+	for _, item := range m.items {
+		out = append(out, item)
 	}
-	m.order = m.order[:0]
+	clear(m.items)
+	slices.SortFunc(out, func(a, b mail) int { return cmp.Compare(a.seq, b.seq) })
 	return out
 }
 

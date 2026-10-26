@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,6 +30,17 @@ func (f fakeState) Snapshot() engine.State { return f.state }
 
 func pairEvent(seq uint64, pair domain.Pair) engine.Event {
 	return engine.Event{Seq: seq, Kind: engine.EventPairUpdated, Pair: &engine.PairSnapshot{Pair: pair, Quotes: map[domain.Exchange]engine.Quote{}}}
+}
+
+func episodeEndedEvent(seq, id uint64) engine.Event {
+	at := time.Date(2026, 9, 2, 12, 0, 0, 0, time.UTC)
+	return engine.Event{Seq: seq, Kind: engine.EventEpisodeChanged, Episode: &engine.Episode{
+		ID: id, Pair: btc, BuyExchange: "binance", SellExchange: "okx", StartedAt: at, EndedAt: at.Add(time.Second), MaxNetProfitAt: at,
+	}}
+}
+
+func exchangeEvent(seq uint64, ex domain.Exchange, connected bool) engine.Event {
+	return engine.Event{Seq: seq, Kind: engine.EventExchangeStatusChanged, Status: &engine.ExchangeStatus{Exchange: ex, Connected: connected}}
 }
 
 type testServer struct {
@@ -146,9 +158,11 @@ func (b *blockingState) Snapshot() engine.State {
 	return b.state
 }
 
-func TestHub_SendsOnlyLatestPerTargetToClientThatHasNotCaughtUp(t *testing.T) {
-	t.Parallel()
-	st := &blockingState{state: engine.State{Seq: 10}, called: make(chan struct{}, 1), release: make(chan struct{})}
+// connectWithoutCatchingUp は、seq の初期状態を送る前で止まったクライアントをつなぐ。
+// 返した release を呼ぶと初期状態を送り、それまでにハブへ渡したイベントの送信を始める。
+func connectWithoutCatchingUp(t *testing.T, seq uint64) (*testServer, *websocket.Conn, func()) {
+	t.Helper()
+	st := &blockingState{state: engine.State{Seq: seq}, called: make(chan struct{}, 1), release: make(chan struct{})}
 	var releaseOnce sync.Once
 	release := func() { releaseOnce.Do(func() { close(st.release) }) }
 	ts := newTestServerWith(t, st, server.Options{})
@@ -161,6 +175,17 @@ func TestHub_SendsOnlyLatestPerTargetToClientThatHasNotCaughtUp(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("接続後に初期状態を取りに来るはず")
 	}
+	return ts, conn, func() {
+		release()
+		if init := readMessage(t, conn, time.Second); init["type"] != "init" || init["seq"] != float64(seq) {
+			t.Fatalf("最初は init のはず: %v", init)
+		}
+	}
+}
+
+func TestHub_SendsOnlyLatestPerTargetToClientThatHasNotCaughtUp(t *testing.T) {
+	t.Parallel()
+	ts, conn, release := connectWithoutCatchingUp(t, 10)
 	// 初期状態を送る前に、同じペアの更新が重なって届く
 	ts.hub.HandleEvent(pairEvent(11, btc))
 	ts.hub.HandleEvent(pairEvent(12, eth))
@@ -168,9 +193,6 @@ func TestHub_SendsOnlyLatestPerTargetToClientThatHasNotCaughtUp(t *testing.T) {
 	ts.hub.HandleEvent(pairEvent(14, btc))
 	release()
 
-	if init := readMessage(t, conn, time.Second); init["type"] != "init" {
-		t.Fatalf("最初は init のはず: %v", init)
-	}
 	got := map[string]any{}
 	for range 2 {
 		m := readMessage(t, conn, time.Second)
@@ -189,6 +211,29 @@ func TestHub_SendsOnlyLatestPerTargetToClientThatHasNotCaughtUp(t *testing.T) {
 	ts.hub.HandleEvent(pairEvent(15, eth))
 	if next := readMessage(t, conn, time.Second); next["seq"] != float64(15) {
 		t.Fatalf("次に届くのは新しい更新のはず: %v", next)
+	}
+}
+
+func TestHub_SendsPendingUpdatesInSeqOrderAcrossTargets(t *testing.T) {
+	t.Parallel()
+	ts, conn, release := connectWithoutCatchingUp(t, 10)
+	// 初期状態を送る前に、機会の終了・取引所の切断・別のペアの更新を挟んで、同じペアの更新が重なって届く
+	ts.hub.HandleEvent(pairEvent(11, btc))
+	ts.hub.HandleEvent(episodeEndedEvent(12, 7))
+	ts.hub.HandleEvent(exchangeEvent(13, "okx", false))
+	ts.hub.HandleEvent(pairEvent(14, eth))
+	ts.hub.HandleEvent(pairEvent(15, btc))
+	release()
+
+	// 画面は受け取った最大の seq 以下を古いとして捨てるため、seq の昇順に届けば、どの対象の最新の状態も捨てられない
+	want := []string{"episode 12", "exchange 13", "pair 14", "pair 15"}
+	got := make([]string, 0, len(want))
+	for range want {
+		m := readMessage(t, conn, time.Second)
+		got = append(got, fmt.Sprintf("%v %v", m["type"], m["seq"]))
+	}
+	if strings.Join(got, ", ") != strings.Join(want, ", ") {
+		t.Fatalf("届いた順: got=%v want=%v", got, want)
 	}
 }
 
