@@ -4,5 +4,5 @@ go 1.24
 
 require (
 	github.com/gorilla/websocket v1.5.3
-	github.com/shopspring/decimal v1.5.0
+	github.com/shopspring/decimal v1.6.0
 )
