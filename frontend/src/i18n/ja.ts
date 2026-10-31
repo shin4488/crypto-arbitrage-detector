@@ -26,9 +26,10 @@ export const ja = {
   tradeAmountHelp: 'この金額相当の売買として、価格差・手数料・差引を計算します',
   forAmount: (quantity: string, base: string, cost: string, quote: string) =>
     `${quantity} ${base} ≈ ${cost} ${quote}`,
-  capped: (quantity: string, base: string, cost: string, quote: string) =>
-    `板で利益が出るのは ${quantity} ${base}（約 ${cost} ${quote}）まで`,
-  depthExhausted: '取得済みの板の範囲での値です（実際はもっと多い可能性があります）',
+  capped: (quantity: string, base: string, cost: string, quote: string, depthExhausted: boolean) =>
+    `板で利益が出るのは ${quantity} ${base}（約 ${cost} ${quote}）まで${
+      depthExhausted ? '。取得済みの板の範囲での値です（実際はもっと多い可能性があります）' : ''
+    }`,
 
   // カードの操作
   dragToReorder: 'ドラッグして並び替え（↑↓キーでも動かせます）',

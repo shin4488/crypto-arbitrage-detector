@@ -25,9 +25,12 @@ export const en: Dict = {
   tradeAmountHelp: 'The price gap, fees, and net below are calculated for a trade of this amount',
   forAmount: (quantity: string, base: string, cost: string, quote: string) =>
     `${quantity} ${base} ≈ ${cost} ${quote}`,
-  capped: (quantity: string, base: string, cost: string, quote: string) =>
-    `Only ${quantity} ${base} (≈ ${cost} ${quote}) is profitable at the current depth`,
-  depthExhausted: 'Based on the received order book depth (could be more in reality)',
+  capped: (quantity: string, base: string, cost: string, quote: string, depthExhausted: boolean) =>
+    `Only ${quantity} ${base} (≈ ${cost} ${quote}) is profitable at the current depth${
+      depthExhausted
+        ? '. This counts only the order book levels received, so the actual amount may be larger'
+        : ''
+    }`,
 
   dragToReorder: 'Drag to reorder (or use the ↑↓ keys)',
   dragChipToReorder: 'Drag to reorder (or use the ←→ keys)',

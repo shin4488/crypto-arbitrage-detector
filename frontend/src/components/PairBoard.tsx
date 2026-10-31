@@ -179,8 +179,7 @@ function Verdict({ direction: d, pair, exchanges, amount }: VerdictProps) {
       <p className="muted small">{t.forAmount(quantity, pair.base, cost, pair.quote)}</p>
       {plan.capped && (
         <p className="warn small">
-          {t.capped(quantity, pair.base, cost, pair.quote)}
-          {d.depthExhausted && `。${t.depthExhausted}`}
+          {t.capped(quantity, pair.base, cost, pair.quote, d.depthExhausted)}
         </p>
       )}
     </div>

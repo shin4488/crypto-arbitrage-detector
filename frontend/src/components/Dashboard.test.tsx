@@ -145,6 +145,26 @@ describe('Dashboard', () => {
     expect(within(btc).getByText(/取得済みの板の範囲での値/)).toBeTruthy();
   });
 
+  it('板を使い切っていなければ、板で利益が出る量の注記に取得済みの板の範囲の断りを付けない', () => {
+    const notExhausted: FeedState = {
+      ...initialized,
+      pairs: [pairFixture({ directions: [profitableDirectionFixture({ depthExhausted: false })] })],
+    };
+    renderDashboard(notExhausted);
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    expect(within(btc).getByText('板で利益が出るのは 0.3 BTC（約 30 USDT）まで')).toBeTruthy();
+  });
+
+  it('英語表示では、板で利益が出る量の注記を英語の文として出す', () => {
+    renderDashboard(withOpportunity, { lang: 'en' });
+    const btc = screen.getByRole('region', { name: 'BTC/USDT' });
+    expect(
+      within(btc).getByText(
+        'Only 0.3 BTC (≈ 30 USDT) is profitable at the current depth. This counts only the order book levels received, so the actual amount may be larger',
+      ),
+    ).toBeTruthy();
+  });
+
   it('取引金額を小さくすると、その金額ぶんの数量で計算する', () => {
     renderDashboard(withOpportunity, { amount: '20' });
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
