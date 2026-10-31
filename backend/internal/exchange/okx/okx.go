@@ -176,11 +176,11 @@ func parseMessage(raw []byte, instToPair map[string]domain.Pair, now time.Time) 
 	}
 	// books5 はスナップショットなので配列には常に1件しか入らないが、複数あれば最後（最新）を使う。
 	data := msg.Data[len(msg.Data)-1]
-	bids, err := exchange.ParseLevels(data.Bids, exchange.ParseLevel)
+	bids, err := exchange.ParseLevels(data.Bids)
 	if err != nil {
 		return domain.OrderBook{}, false, fmt.Errorf("okx: bid: %w", err)
 	}
-	asks, err := exchange.ParseLevels(data.Asks, exchange.ParseLevel)
+	asks, err := exchange.ParseLevels(data.Asks)
 	if err != nil {
 		return domain.OrderBook{}, false, fmt.Errorf("okx: ask: %w", err)
 	}

@@ -170,6 +170,7 @@ func TestFeed_SkipsMessagesThatAreNotBooks(t *testing.T) {
 		{"購読していないストリーム", strings.Replace(sampleDepth, "btcusdt", "solusdt", 1)},
 		{"壊れた JSON", `{"stream":`},
 		{"数値でない価格", strings.Replace(sampleDepth, `"65433.79"`, `"abc"`, 1)},
+		{"数値でない数量", strings.Replace(sampleDepth, `"0.52000000"`, `"abc"`, 1)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name+"は板として渡さず、接続を保って次の板を受け取る", func(t *testing.T) {
