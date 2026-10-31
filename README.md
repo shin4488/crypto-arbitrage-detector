@@ -2,7 +2,7 @@
 
 暗号資産取引所（Binance と OKX）の板（オーダーブック）をリアルタイムに監視し、取引所間の価格差から手数料を差し引いても利益が出る機会を検知して画面に表示するツールです。
 
-※ 本ツールは価格差の検知と画面表示のみを行い、自動発注は行いません。
+※ 本ツールは価格差を検知して画面に表示するだけで、注文は出しません。
 
 ## 主な特徴
 
@@ -126,14 +126,24 @@ crypto-arbitrage-detector/
 ├── backend/
 │   ├── cmd/server/            # サーバー起動・エントリポイント
 │   ├── internal/
+│   │   ├── app/               # 各部品の組み立てと HTTP サーバーの起動・停止
 │   │   ├── arbitrage/         # 板突き合わせ・利鞘計算ロジック
+│   │   ├── config/            # 設定の読み込み・検証
+│   │   ├── domain/            # 取引所・通貨ペア・板の型
 │   │   ├── engine/            # 板の保持・判定・機会の履歴管理
-│   │   ├── exchange/          # 取引所別WebSocketクライアント（Binance / OKX）
-│   │   └── server/            # クライアントへの WebSocket 配信
+│   │   ├── exchange/          # 取引所への WebSocket 接続（共通の再接続処理、Binance / OKX 固有の処理）
+│   │   ├── server/            # クライアントへの WebSocket 配信
+│   │   ├── webui/             # 埋め込んだフロントエンドの配信
+│   │   └── wire/              # 配信する JSON の形式
+│   ├── scripts/dev.sh         # 開発時にソースの変更を検知してサーバーを再起動
 │   └── config.json            # 通貨ペア・取引所設定
 └── frontend/
     └── src/
         ├── components/        # UIコンポーネント（カード、ヘッダー、履歴等）
+        ├── format/            # 数値の表示整形
+        ├── hooks/             # React のフック（配信の受信、表示設定の保存など）
+        ├── i18n/              # 日本語・英語の文言
+        ├── protocol/          # 配信 JSON の型と解釈
         ├── state/             # リアルタイム状態管理
         └── ws/                # 自動再接続付きWebSocketクライアント
 ```
