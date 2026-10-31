@@ -105,14 +105,23 @@ describe('reducer', () => {
   });
 
   it('複数メッセージを順に適用する', () => {
+    const btc = pairFixture({ pair: 'BTC/USDT', updatedAt: '2026-09-02T12:00:01.000Z' });
+    const eth = pairFixture({
+      pair: 'ETH/USDT',
+      base: 'ETH',
+      updatedAt: '2026-09-02T12:00:02.000Z',
+    });
     const s = reducer(initialState, {
       type: 'messages',
       messages: [
         init,
-        { type: 'pair', seq: init.seq + 1, pair: pairFixture({ pair: 'BTC/USDT' }) },
-        { type: 'pair', seq: init.seq + 2, pair: pairFixture({ pair: 'ETH/USDT', base: 'ETH' }) },
+        { type: 'pair', seq: init.seq + 1, pair: btc },
+        { type: 'pair', seq: init.seq + 2, pair: eth },
       ],
     });
+    // init で初期化した後に、続く2つの更新がどちらも反映される
+    expect(s.initialized).toBe(true);
     expect(s.seq).toBe(init.seq + 2);
+    expect(s.pairs).toEqual([btc, eth]);
   });
 });
