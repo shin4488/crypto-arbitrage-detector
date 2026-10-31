@@ -45,3 +45,15 @@ updates:
       # Node は LTS に合わせて手動で上げる（25 以降は corepack が同梱されず、そのままでは動かない）
       - dependency-name: node
         update-types: ["version-update:semver-major"]
+
+  # docker-compose.yml の開発用サービスのイメージ。docker の項は Dockerfile だけを対象にするため、別に指定する
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      # 理由は docker の項と同じ
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
