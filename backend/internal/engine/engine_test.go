@@ -505,21 +505,25 @@ func TestHistoryLimit(t *testing.T) {
 
 func TestConcurrentUpdates(t *testing.T) {
 	t.Parallel()
-	e, clock, _ := newEngine(t)
+	e, clock, rec := newEngine(t)
 
+	// 取引所ごと・ペアごとに別々のゴルーチンから板を渡す（実際のフィードと同じく並行に呼ばれる）
+	const updates = 200
+	exchanges := []domain.Exchange{"binance", "okx"}
+	pairs := []domain.Pair{btc, eth}
+	bidAt := func(i int) decimal.Decimal { return decimal.NewFromInt(int64(100 + i%7)) }
 	var wg sync.WaitGroup
-	for _, ex := range []domain.Exchange{"binance", "okx"} {
-		for _, pair := range []domain.Pair{btc, eth} {
+	for _, ex := range exchanges {
+		for _, pair := range pairs {
 			wg.Add(1)
 			go func(ex domain.Exchange, pair domain.Pair) {
 				defer wg.Done()
-				for i := 0; i < 200; i++ {
-					price := decimal.NewFromInt(100).Add(decimal.NewFromInt(int64(i % 7)))
+				for i := 0; i < updates; i++ {
 					b := domain.OrderBook{
 						Exchange:   ex,
 						Pair:       pair,
-						Bids:       []domain.Level{{Price: price, Quantity: d("1")}},
-						Asks:       []domain.Level{{Price: price.Add(d("0.5")), Quantity: d("1")}},
+						Bids:       []domain.Level{{Price: bidAt(i), Quantity: d("1")}},
+						Asks:       []domain.Level{{Price: bidAt(i).Add(d("0.5")), Quantity: d("1")}},
 						ReceivedAt: clock.Now(),
 					}
 					if err := e.UpdateBook(b); err != nil {
@@ -532,9 +536,25 @@ func TestConcurrentUpdates(t *testing.T) {
 	}
 	wg.Wait()
 
-	s := e.Snapshot()
-	if len(s.Pairs) != 2 {
-		t.Fatalf("pairs=%d", len(s.Pairs))
+	// 板を渡すたびに評価結果が1件ずつ通知され、取りこぼしがない
+	if got, want := len(rec.ofKind(engine.EventPairUpdated)), len(exchanges)*len(pairs)*updates; got != want {
+		t.Fatalf("PairUpdated の件数: got=%d want=%d", got, want)
+	}
+	// 並行に呼ばれても、購読者には Seq の順に1つずつ届く（配信側は Seq で古いメッセージを捨てるため）
+	evs := rec.Events()
+	for i := 1; i < len(evs); i++ {
+		if evs[i].Seq != evs[i-1].Seq+1 {
+			t.Fatalf("%d件目の Seq が順になっていない: %d -> %d", i, evs[i-1].Seq, evs[i].Seq)
+		}
+	}
+	// 各取引所・各ペアの気配は、それぞれ最後に渡した板になる
+	last := bidAt(updates - 1)
+	for _, p := range e.Snapshot().Pairs {
+		for _, ex := range exchanges {
+			if q, ok := p.Quotes[ex]; !ok || !q.Bid.Price.Equal(last) {
+				t.Fatalf("%s の %s の最良bidは最後に渡した %s のはず: %+v", p.Pair, ex, last, p.Quotes[ex])
+			}
+		}
 	}
 }
 
