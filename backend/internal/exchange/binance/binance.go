@@ -114,11 +114,11 @@ func parseMessage(raw []byte, streamToPair map[string]domain.Pair, now time.Time
 	if !ok {
 		return domain.OrderBook{}, false, fmt.Errorf("binance: 未知のストリームです: %s", msg.Stream)
 	}
-	bids, err := exchange.ParseLevels(msg.Data.Bids, exchange.ParseLevel)
+	bids, err := exchange.ParseLevels(msg.Data.Bids)
 	if err != nil {
 		return domain.OrderBook{}, false, fmt.Errorf("binance: bid: %w", err)
 	}
-	asks, err := exchange.ParseLevels(msg.Data.Asks, exchange.ParseLevel)
+	asks, err := exchange.ParseLevels(msg.Data.Asks)
 	if err != nil {
 		return domain.OrderBook{}, false, fmt.Errorf("binance: ask: %w", err)
 	}

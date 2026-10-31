@@ -9,6 +9,7 @@ package okx
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -121,7 +122,7 @@ func (f *Feed) handleMessage(raw []byte) error {
 	book, ok, err := parseMessage(raw, f.instToPair, f.cfg.Now())
 	if err != nil {
 		var subErr *subscriptionError
-		if asSubscriptionError(err, &subErr) {
+		if errors.As(err, &subErr) {
 			// 購読が拒否されるのは設定ミスなどが原因で、つなぎ直しても直らない。ログに残して処理は続ける。
 			f.cfg.Logger.Error("OKX の購読が拒否されました", "code", subErr.code, "msg", subErr.msg)
 			return nil
@@ -142,14 +143,6 @@ type subscriptionError struct {
 
 func (e *subscriptionError) Error() string {
 	return fmt.Sprintf("okx: エラーイベント code=%s msg=%s", e.code, e.msg)
-}
-
-func asSubscriptionError(err error, target **subscriptionError) bool {
-	se, ok := err.(*subscriptionError) //nolint:errorlint // parseMessage が直接返すためラップされない
-	if ok {
-		*target = se
-	}
-	return ok
 }
 
 // parseMessage は受信メッセージを板に変換する。板以外（pong、購読応答）なら ok=false。
@@ -176,11 +169,11 @@ func parseMessage(raw []byte, instToPair map[string]domain.Pair, now time.Time) 
 	}
 	// books5 はスナップショットなので配列には常に1件しか入らないが、複数あれば最後（最新）を使う。
 	data := msg.Data[len(msg.Data)-1]
-	bids, err := exchange.ParseLevels(data.Bids, exchange.ParseLevel)
+	bids, err := exchange.ParseLevels(data.Bids)
 	if err != nil {
 		return domain.OrderBook{}, false, fmt.Errorf("okx: bid: %w", err)
 	}
-	asks, err := exchange.ParseLevels(data.Asks, exchange.ParseLevel)
+	asks, err := exchange.ParseLevels(data.Asks)
 	if err != nil {
 		return domain.OrderBook{}, false, fmt.Errorf("okx: ask: %w", err)
 	}

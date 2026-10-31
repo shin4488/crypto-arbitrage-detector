@@ -4,8 +4,11 @@ package exchange
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/shin4488/crypto-arbitrage-detector/backend/internal/domain"
 )
@@ -46,22 +49,27 @@ func (c FeedConfig) Normalize() FeedConfig {
 	return c
 }
 
-// ParseLevels は [["price","qty"], ...] 形式の板を Level に変換する共通処理。
+// ParseLevels は [["price","qty", ...], ...] 形式の板を Level に変換する共通処理。
 // 数量が 0 の段は除外する（取引所によっては「この段が消えた」という意味で送ってくる）。
-// 1段の要素数は取引所によって違う（OKX は4要素）ので、先頭の2要素（価格・数量）だけを parse に渡す。
-func ParseLevels(raw [][]string, parse func(s string) (domain.Level, bool, error)) ([]domain.Level, error) {
+// 1段の要素数は取引所によって違う（OKX は4要素）ので、先頭の2要素（価格・数量）だけを使う。
+func ParseLevels(raw [][]string) ([]domain.Level, error) {
 	levels := make([]domain.Level, 0, len(raw))
 	for _, entry := range raw {
 		if len(entry) < 2 {
 			continue
 		}
-		l, keep, err := parse(entry[0] + " " + entry[1])
+		price, err := decimal.NewFromString(entry[0])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("価格を解釈できません: %q: %w", entry[0], err)
 		}
-		if keep {
-			levels = append(levels, l)
+		qty, err := decimal.NewFromString(entry[1])
+		if err != nil {
+			return nil, fmt.Errorf("数量を解釈できません: %q: %w", entry[1], err)
 		}
+		if qty.IsZero() {
+			continue
+		}
+		levels = append(levels, domain.Level{Price: price, Quantity: qty})
 	}
 	return levels, nil
 }
