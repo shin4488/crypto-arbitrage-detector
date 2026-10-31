@@ -300,7 +300,7 @@ describe('Dashboard', () => {
     const { onLayoutAction } = renderDashboard(initialized);
     const btc = screen.getByRole('region', { name: 'BTC/USDT' });
     const eth = screen.getByRole('region', { name: 'ETH/USDT' });
-    const handle = within(btc).getByRole('button', { name: /ドラッグして並び替え/ });
+    const handle = within(btc).getByRole('button', { name: /ドラッグして並べ替え/ });
     // ドラッグして ETH の位置に落とす
     fireEvent.dragStart(btc);
     fireEvent.dragOver(eth);

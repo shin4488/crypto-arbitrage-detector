@@ -123,7 +123,7 @@ describe('通貨ペアのカード', () => {
     receivePair(pairFixture({ pair: 'SOL/USDT', base: 'SOL' }));
     view.rerender(<App />);
     const handle = () =>
-      within(card('ETH/USDT')).getByRole('button', { name: /ドラッグして並び替え/ });
+      within(card('ETH/USDT')).getByRole('button', { name: /ドラッグして並べ替え/ });
     fireEvent.keyDown(handle(), { key: 'ArrowDown' });
     expect(cardOrder()).toEqual(['BTC/USDT', 'SOL/USDT', 'ETH/USDT']);
     // 末尾のカードはそれ以上下げられないので、並び順も計測も変わらない

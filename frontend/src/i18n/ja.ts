@@ -32,8 +32,8 @@ export const ja = {
     }`,
 
   // カードの操作
-  dragToReorder: 'ドラッグして並び替え（↑↓キーでも動かせます）',
-  dragChipToReorder: 'ドラッグして並び替え（←→キーでも動かせます）',
+  dragToReorder: 'ドラッグして並べ替え（↑↓キーでも動かせます）',
+  dragChipToReorder: 'ドラッグして並べ替え（←→キーでも動かせます）',
   hidePair: 'このペアを隠す',
   showPairs: '表示するペア',
   showAll: 'すべて表示',
