@@ -130,7 +130,7 @@ func (a *App) Run(ctx context.Context) error {
 	if err := srv.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) { //nolint:contextcheck // 上記コメント参照
 		errs = append(errs, fmt.Errorf("HTTP サーバーの停止: %w", err))
 	}
-	<-serveErr
+	<-serveErr //nolint:errcheck // Shutdown の後の Serve は常に http.ErrServerClosed を返すので、終了を待つだけでよい
 	wg.Wait()
 	a.log.Info("停止しました")
 	return errors.Join(errs...)

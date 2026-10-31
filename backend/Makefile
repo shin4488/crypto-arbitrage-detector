@@ -4,7 +4,7 @@
 # ローカルに Go がある環境や CI では `make test GO=go` のように上書きできる。
 
 GO_IMAGE      ?= golang:1.27-alpine
-LINT_IMAGE    ?= golangci/golangci-lint:v2.1.6
+LINT_IMAGE    ?= golangci/golangci-lint:v2.15.0
 MOD_CACHE     ?= crypto-arb-gomod
 BUILD_CACHE   ?= crypto-arb-gobuild
 LINT_CACHE    ?= crypto-arb-golangci
