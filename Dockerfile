@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
 
 # --- 実行イメージ ---
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329
 LABEL org.opencontainers.image.title="crypto-arbitrage-detector" \
       org.opencontainers.image.source="https://github.com/shin4488/crypto-arbitrage-detector"
 COPY --from=backend /out/server /server
