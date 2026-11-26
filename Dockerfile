@@ -23,7 +23,7 @@ COPY frontend/src ./src
 RUN yarn build
 
 # --- バックエンドのビルド ---
-FROM golang:1.27-alpine@sha256:eb61c3873c97416fff0116553fff65d67a3549f72e11d9758849a689cdd8b523 AS backend
+FROM golang:1.27-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS backend
 WORKDIR /app/backend
 ENV CGO_ENABLED=0
 COPY backend/go.mod backend/go.sum ./
@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
 
 # --- 実行イメージ ---
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5
 LABEL org.opencontainers.image.title="crypto-arbitrage-detector" \
       org.opencontainers.image.source="https://github.com/shin4488/crypto-arbitrage-detector"
 COPY --from=backend /out/server /server
